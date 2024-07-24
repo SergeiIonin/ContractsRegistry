@@ -1,4 +1,4 @@
-# ContractsRegistrator...4s
+# ContractsRegistrator...4s (WIP)
 ![latest version](https://img.shields.io/badge/version-0.1.0-orange)
 ![scala version](https://img.shields.io/badge/scala-3-red)
 
