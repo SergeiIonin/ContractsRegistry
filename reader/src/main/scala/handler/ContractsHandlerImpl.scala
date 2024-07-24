@@ -7,6 +7,7 @@ import cats.implicits.catsSyntaxFlatMapOps
 import cats.syntax.applicative.*
 import fs2.kafka.{CommittableConsumerRecord, KafkaConsumer}
 import repository.ContractsRepository
+import domain.Contract
 
 class ContractsHandlerImpl[F[_] : Monad](repository: ContractsRepository[F]) extends ContractsHandler[F]:
   def handle(contract: Contract): F[Unit] = repository.save(contract)

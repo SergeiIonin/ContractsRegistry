@@ -11,6 +11,7 @@ final case class Contract(
                          )
 
 object Contract:
-  implicit val encodeFields: Encoder[Map[String, Any]] = Encoder.encodeMap[String, Json].contramap(_.view.mapValues(_.asInstanceOf[Json]))
-  implicit val decodeFields: Decoder[Map[String, Any]] = Decoder.decodeMap[String, Json].map(_.view.mapValues(_.asInstanceOf[Any]))
-
+  given encodeFields: Encoder[Map[String, Any]] = Encoder.encodeMap[String, Json].contramap(_.view.mapValues(_.asInstanceOf[Json]).toMap)
+  given decodeFields: Decoder[Map[String, Any]] = Decoder.decodeMap[String, Json].map(_.view.mapValues(_.asInstanceOf[Any]).toMap)
+  given encoder: Encoder[Contract] = Encoder.derived[Contract]
+  given decoder: Decoder[Contract] = Decoder.derived[Contract]

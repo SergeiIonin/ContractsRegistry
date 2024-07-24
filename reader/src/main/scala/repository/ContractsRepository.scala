@@ -2,8 +2,10 @@ package io.github.sergeiionin.contractsregistrator
 package repository
 
 import domain.Contract
+
 import skunk.Session
 import cats.effect.Resource
+import cats.effect.kernel.Async
 
 trait ContractsRepository[F[_]]:
   def save(contract: Contract): F[Unit]
@@ -12,5 +14,5 @@ trait ContractsRepository[F[_]]:
   def delete(name: String): F[Unit]
   
 object ContractsRepository:
-  def make[F[_]](session: Session[F]): Resource[F, ContractsRepositoryPostgresImpl[F]] =
-    Resource.eval[F](ContractsRepositoryPostgresImpl[F](session))
+  def make[F[_] : Async](session: Session[F]): Resource[F, ContractsRepository[F]] =
+    Resource.pure[F, ContractsRepository[F]](ContractsRepositoryPostgresImpl[F](session))
