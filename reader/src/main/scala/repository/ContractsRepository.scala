@@ -6,13 +6,14 @@ import domain.Contract
 import skunk.Session
 import cats.effect.Resource
 import cats.effect.kernel.Async
+import org.typelevel.log4cats.Logger
 
 trait ContractsRepository[F[_]]:
   def save(contract: Contract): F[Unit]
-  def get(name: String): F[Option[Contract]]
+  def get(subject: String, id: Int): F[Option[Contract]]
   def getAll(): F[fs2.Stream[F, Contract]]
-  def delete(name: String): F[Unit]
+  def delete(subject: String, id: Int): F[Unit]
   
 object ContractsRepository:
-  def make[F[_] : Async](session: Session[F]): Resource[F, ContractsRepository[F]] =
+  def make[F[_] : Async](session: Session[F])(using Logger[F]): Resource[F, ContractsRepository[F]] =
     Resource.pure[F, ContractsRepository[F]](ContractsRepositoryPostgresImpl[F](session))

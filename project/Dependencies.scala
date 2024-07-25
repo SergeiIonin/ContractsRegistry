@@ -9,6 +9,9 @@ object Dependencies {
     val http4s = "0.23.27"
     val tapirYamlDoc = "0.20.2"
     val shapeless = "3.0.1"
+    val testcontainers = "0.41.4"
+    val scalatest = "3.2.19"
+    val `specs2-cats` = "4.20.8"
   }
 
   lazy val catsDependencies =
@@ -79,14 +82,17 @@ object Dependencies {
       "com.github.pureconfig" %% "pureconfig-core" % "0.17.7",
       "org.tpolecat" %% "skunk-core" % "0.6.4",
       "org.tpolecat" %% "skunk-circe" % "0.6.4",
-      "com.47deg" %% "github4s" % "0.33.3"
+      "com.47deg" %% "github4s" % "0.33.3",
+      "ch.qos.logback" % "logback-classic" % "1.5.6",
+      "com.lihaoyi" %% "os-lib" % "0.7.8"
     )
 
   lazy val testDependencies =
     Seq(
-      "org.scalatest" %% "scalatest"         % "3.2.15" % Test,
-      "org.specs2"    %% "specs2-cats"       % "4.17.0" % Test,
-      "com.dimafeng" %% "testcontainers-scala-core"      % "0.39.5",
-      "com.dimafeng" %% "testcontainers-scala-kafka"     % "0.39.5"
-    )
+      "org.scalatest" %% "scalatest"                     % Versions.scalatest % Test,
+      "org.specs2"    %% "specs2-cats"                   % Versions.`specs2-cats` % Test,
+    ) ++
+    Seq("testcontainers-scala-core", "testcontainers-scala-kafka",
+      "testcontainers-scala-scalatest", "testcontainers-scala-postgresql")
+      .map("com.dimafeng" %% _ % Versions.testcontainers % Test)
 }

@@ -6,6 +6,8 @@ import cats.syntax.monad.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.applicative.*
+import cats.syntax.monadError.*
+import cats.syntax.applicativeError.*
 import cats.effect.Resource
 import domain.Contract
 
@@ -19,40 +21,47 @@ import skunk.circe.codec.json.jsonb
 import domain.Contract.given
 
 import cats.effect.kernel.Async
+import org.typelevel.log4cats.Logger
 
-class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F]) extends ContractsRepository[F]:
-  val contractEncoder: skunk.Encoder[Contract] =
-    (varchar ~ varchar.opt ~ jsonb).contramap {
-      case Contract(name, description, fields) =>
-        name ~ description ~ fields.asJson
+class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using Logger[F]) extends ContractsRepository[F]:
+  private val contractEncoder: skunk.Encoder[Contract] =
+    (varchar ~ int4 ~ int4 ~ text).contramap {
+      case Contract(subject, version, id, schema) =>
+        subject ~ version ~ id ~ schema
     }
 
-  val contractDecoder: skunk.Decoder[Contract] =
-    (varchar ~ varchar.opt ~ jsonb).map {
-      case name ~ description ~ fieldsJson =>
-        Contract(name, description, fieldsJson.as[Map[String, Any]].getOrElse(Map.empty))
+  private val contractDecoder: skunk.Decoder[Contract] =
+    (varchar ~ int4 ~ int4 ~ text).map {
+      case subject ~ version ~ id ~ schema =>
+        Contract(subject, version, id, schema)
     }
 
-  val insertCommand: Command[Contract] =
-    sql"INSERT INTO contracts (name, description, fields) VALUES ($contractEncoder)".command
+  private val insertCommand: Command[Contract] =
+    sql"INSERT INTO contracts (subject, version, id, schema) VALUES ($contractEncoder)".command
 
-  val selectByNameQuery: Query[String, Contract] =
-    sql"SELECT name, description, fields FROM contracts WHERE name = $varchar".query(contractDecoder)
+  private val selectBySubjectAndIdQuery: Query[(String, Int), Contract] =
+    sql"SELECT subject, version, id, schema FROM contracts WHERE subject = $varchar AND id = $int4".query(contractDecoder)
 
-  val selectAllQuery: Query[Void, Contract] =
-    sql"SELECT name, description, fields FROM contracts".query(contractDecoder)
+  private val selectAllQuery: Query[Void, Contract] =
+    sql"SELECT subject, version, id, schema FROM contracts".query(contractDecoder)
 
-  val deleteCommand: Command[String] =
-    sql"DELETE FROM contracts WHERE name = $varchar".command
+  private val deleteCommand: Command[(String, Int)] =
+    sql"DELETE FROM contracts WHERE subject = $varchar AND id = $int4".command
 
   override def save(contract: Contract): F[Unit] =
-    session.prepare(insertCommand).map(_.execute(contract)).void
+    session.prepare(insertCommand).flatMap(_.execute(contract))
+      .recoverWith {
+        case SqlState.UniqueViolation(_) => 
+          summon[Logger[F]].info(s"contract with ${contract.subject}:${contract.id} already exists")
+            .as(skunk.data.Completion.Insert(0))
+      }
+      .void
 
-  override def get(name: String): F[Option[Contract]] =
-    session.prepare(selectByNameQuery).flatMap(_.option(name))
+  override def get(subject: String, id: Int): F[Option[Contract]] =
+    session.prepare(selectBySubjectAndIdQuery).flatMap(_.option((subject, id)))
 
   override def getAll(): F[fs2.Stream[F, Contract]] =
     session.stream(selectAllQuery)(Void, 10).pure[F]
 
-  override def delete(name: String): F[Unit] =
-    session.prepare(deleteCommand).map(_.execute(name)).void
+  override def delete(subject: String, id: Int): F[Unit] =
+    session.prepare(deleteCommand).flatMap(_.execute((subject, id))).void
