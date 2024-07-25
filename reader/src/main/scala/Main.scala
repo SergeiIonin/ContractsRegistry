@@ -5,17 +5,19 @@ import cats.effect.{ExitCode, IO, IOApp}
 import fs2.kafka.{ConsumerSettings, Deserializer, KafkaConsumer}
 import handler.ContractsHandler
 import repository.ContractsRepository
-
+import handler.protos.ProtosHandler
 import io.circe.parser
-import domain.Contract
-
 import io.circe
+import domain.Contract
 import org.typelevel.log4cats.slf4j.Slf4jLogger
-import org.typelevel.log4cats.{Logger, LoggerFactory, SelfAwareStructuredLogger}
+import org.typelevel.log4cats.{Logger, LoggerFactory}
 import skunk.Session
 import natchez.Trace.Implicits.noop
+import os.*
 
 object Main extends IOApp:
+  opaque type Bytes = Array[Byte]
+  
   override def run(args: List[String]): IO[ExitCode] =
     val topics = List("_schemas")
     val props = Map(
@@ -23,34 +25,49 @@ object Main extends IOApp:
       "group.id" -> "contracts-registrator-reader",
       "auto.offset.reset" -> "earliest",
     )
-    val dbHost = "http://localhost:5434" // fixme
+    val dbHost = "localhost" // fixme
+    val dbPort = 5434
     val user = "postgres"
-    val database = "contracts"
+    val database = "foo" //"contracts"
     given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
     def toContract(recordRaw: String): Either[circe.Error, Contract] =
       parser.parse(recordRaw).flatMap(json => {
         json.as[Contract]
       })
-
-    val consumerSettings = ConsumerSettings.apply(Deserializer.apply[IO, String], Deserializer.apply[IO, String]).withProperties(props)
+    
+    val consumerSettings =
+      ConsumerSettings
+        .apply(
+          Deserializer.apply[IO, Bytes],
+          Deserializer.apply[IO, Bytes])
+        .withProperties(props)
     
     (for
-      session  <- Session.single[IO](host = dbHost, user = user, database = database)
+      session  <- Session.single[IO](host = dbHost, port = dbPort, user = user, database = database)
       repo     <- ContractsRepository.make[IO](session)
-      consumer <- KafkaConsumer.resource[IO, String, String](consumerSettings)
-      handler  <- ContractsHandler.make[IO](repo)
+      consumer <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
+      protos   <- ProtosHandler.make[IO]("proto/src/main/protobuf/io/github/sergeiionin/contractsregistrator/proto")
+      handler  <- ContractsHandler.make[IO](repo, protos)
     yield (consumer, handler)).use {
       case (c, h) =>
+        logger.info("Starting contracts registrator") >>
         c.subscribe(NonEmptyList.fromListUnsafe(topics)) >>
+          logger.info(s"Subscribed to topics ${topics.mkString(", ")}") >>
           c.stream
-            .evalMap(cr => {
-              val contract = toContract(cr.record.value)
-              contract.fold[IO[Unit]](
-                e => logger.error(s"Failed to parse contract: ${e.getMessage}"),
-                c => logger.info(s"Registering new contract: $c") >> h.handle(c)
-              )
-            })
+            .evalMap(cr =>
+              val recordOpt = Option(cr.record.value).map(bytes => new String(bytes))
+              logger.info(s"Received record: ${recordOpt.getOrElse("N/A")}") >> {
+                recordOpt match
+                  case None => IO.unit
+                  case Some(record) =>
+                    val contract = toContract(record)
+                    contract.fold[IO[Unit]](
+                      e => logger.error(s"Failed to parse contract: ${e.getMessage}"),
+                      c => logger.info(s"Registering new contract: $c") >> h.handle(c)
+                    )
+              }
+            )
             .compile
             .drain
     }.as(ExitCode.Success)
