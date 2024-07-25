@@ -51,7 +51,6 @@ lazy val proto = project
     })
   .enablePlugins(Fs2Grpc)
 
-// add all popular resolvers like maven etc below
 val res = Seq(
   "Confluent"                 at "https://packages.confluent.io/maven/",
   "Sonatype releases"         at "https://oss.sonatype.org/content/repositories/releases",
