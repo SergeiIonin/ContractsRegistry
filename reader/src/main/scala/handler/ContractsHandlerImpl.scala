@@ -12,7 +12,9 @@ import repository.ContractsRepository
 import handler.protos.ProtosHandler
 import domain.Contract
 
-class ContractsHandlerImpl[F[_] : Monad](repository: ContractsRepository[F], protos: ProtosHandler[F]) extends ContractsHandler[F]:
+class ContractsHandlerImpl[F[_] : Monad](repository: ContractsRepository[F],
+                                         protos: ProtosHandler[F],
+                                        ) extends ContractsHandler[F]:
   def handle(contract: Contract): F[Unit] = 
     for
       _ <- repository.save(contract)
