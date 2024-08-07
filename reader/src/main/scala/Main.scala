@@ -5,12 +5,13 @@ import cats.effect.{ExitCode, IO, IOApp}
 import fs2.kafka.{ConsumerSettings, Deserializer, KafkaConsumer}
 import handler.ContractsHandler
 import repository.ContractsRepository
-import handler.protos.ProtosHandler
 import io.circe.parser
 import io.circe
 import domain.Contract
+import github.GitClient
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
+import org.http4s.ember.client.EmberClientBuilder
 import skunk.Session
 import natchez.Trace.Implicits.noop
 import os.*
@@ -46,9 +47,10 @@ object Main extends IOApp:
     (for
       session  <- Session.single[IO](host = dbHost, port = dbPort, user = user, database = database)
       repo     <- ContractsRepository.make[IO](session)
+      client   <- EmberClientBuilder.default[IO].build
       consumer <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
-      protos   <- ProtosHandler.make[IO]("proto/src/main/protobuf/io/github/sergeiionin/contractsregistrator/proto")
-      handler  <- ContractsHandler.make[IO](repo, protos)
+      gitClient <- GitClient.make[IO]("SergeiIonin", "ContractsRegistrator", "master", client, sys.env.get("GITHUB_TOKEN"))
+      handler  <- ContractsHandler.make[IO](repo, gitClient)
     yield (consumer, handler)).use {
       case (c, h) =>
         logger.info("Starting contracts registrator") >>
