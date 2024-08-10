@@ -89,7 +89,7 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
 
   override def createNewTree(fileName: String, baseTreeSha: String, blobSha: String): F[String] =
     for
-      response <- gh.gitData.createTree(owner, repo, Some(baseTreeSha), List(TreeDataSha(s"$path/$fileName", "100644", "blob", blobSha)))
+      response <- gh.gitData.createTree(owner, repo, Some(baseTreeSha), List(TreeDataSha(s"$path/$fileName.proto", "100644", "blob", blobSha)))
       newTreeSha <- response.result match
         case Left(err) => new RuntimeException(s"error creating tree: ${err.getMessage()}").raiseError[F, String]
         case Right(tree) => tree.sha.pure[F]
