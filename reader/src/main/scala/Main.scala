@@ -14,21 +14,20 @@ import org.typelevel.log4cats.{Logger, LoggerFactory}
 import org.http4s.ember.client.EmberClientBuilder
 import skunk.Session
 import natchez.Trace.Implicits.noop
+import io.github.sergeiionin.contractsregistrator.config.ApplicationConfig
 
 object Main extends IOApp:
   opaque type Bytes = Array[Byte]
   
   override def run(args: List[String]): IO[ExitCode] =
-    val topics = List("_schemas")
-    val props = Map(
-      "bootstrap.servers" -> "localhost:19092", // fixme
-      "group.id" -> "contracts-registrator-reader",
-      "auto.offset.reset" -> "latest",
-    )
-    val dbHost = "localhost" // fixme
-    val dbPort = 5434
-    val user = "postgres"
-    val database = "foo" //"contracts"
+    val config = ApplicationConfig.load
+    val contractConfig = config.contract
+    val kafka = config.kafka
+    val postgres = config.postgres
+    
+    val topics = List(kafka.schemasTopic)
+    val consumerProps = kafka.consumerProps.toMap()
+    
     given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
     def toContract(recordRaw: String): Either[circe.Error, Contract] =
@@ -41,15 +40,16 @@ object Main extends IOApp:
         .apply(
           Deserializer.apply[IO, Bytes],
           Deserializer.apply[IO, Bytes])
-        .withProperties(props)
+        .withProperties(consumerProps)
     
     (for
-      session  <- Session.single[IO](host = dbHost, port = dbPort, user = user, database = database)
-      repo     <- ContractsRepository.make[IO](session)
-      client   <- EmberClientBuilder.default[IO].build
-      consumer <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
-      gitClient <- GitClient.make[IO]("SergeiIonin", "ContractsRegistrator", "contracts", "master", client, sys.env.get("GITHUB_TOKEN"))
-      handler  <- ContractsHandler.make[IO](repo, gitClient)
+      session   <- Session.single[IO](host = postgres.host, port = postgres.port, user = postgres.user, database = postgres.database)
+      repo      <- ContractsRepository.make[IO](session)
+      client    <- EmberClientBuilder.default[IO].build
+      consumer  <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
+      gitClient <- GitClient.make[IO](contractConfig.owner, contractConfig.repo, contractConfig.path,
+                                      contractConfig.baseBranch, client, Some(contractConfig.token))
+      handler   <- ContractsHandler.make[IO](repo, gitClient)
     yield (consumer, handler)).use {
       case (c, h) =>
         logger.info("Starting contracts registrator") >>
