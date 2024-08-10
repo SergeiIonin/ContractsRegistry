@@ -23,10 +23,10 @@ class ContractsHandlerImpl[F[_] : Monad](repository: ContractsRepository[F],
       latestSha     <- gitClient.getLatestSHA()
       _             <- gitClient.createRef(latestSha, ref)
       baseTreeSha   <- gitClient.getBaseTreeSha(latestSha)
-      newTreeSha    <- gitClient.createNewTree(s"contracts/${contract.subject}", baseTreeSha, blobSha)
+      newTreeSha    <- gitClient.createNewTree(s"${contract.subject}", baseTreeSha, blobSha)
       newCommitSha  <- gitClient.createCommit(newTreeSha, latestSha, s"Add contract ${contract.subject}")
       _             <- gitClient.updateBranchRef(ref, newCommitSha)
-      _             <- gitClient.createPR(s"Add contract ${contract.subject}", s"Add contract ${contract.subject}", ref, "master")
+      _             <- gitClient.createPR(s"Add contract ${contract.subject}", s"Add contract ${contract.subject}", ref)
     yield ()
 
   def handle(contract: Contract): F[Unit] =

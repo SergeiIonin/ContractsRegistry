@@ -14,7 +14,6 @@ import org.typelevel.log4cats.{Logger, LoggerFactory}
 import org.http4s.ember.client.EmberClientBuilder
 import skunk.Session
 import natchez.Trace.Implicits.noop
-import os.*
 
 object Main extends IOApp:
   opaque type Bytes = Array[Byte]
@@ -24,7 +23,7 @@ object Main extends IOApp:
     val props = Map(
       "bootstrap.servers" -> "localhost:19092", // fixme
       "group.id" -> "contracts-registrator-reader",
-      "auto.offset.reset" -> "earliest",
+      "auto.offset.reset" -> "latest",
     )
     val dbHost = "localhost" // fixme
     val dbPort = 5434
@@ -49,7 +48,7 @@ object Main extends IOApp:
       repo     <- ContractsRepository.make[IO](session)
       client   <- EmberClientBuilder.default[IO].build
       consumer <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
-      gitClient <- GitClient.make[IO]("SergeiIonin", "ContractsRegistrator", "master", client, sys.env.get("GITHUB_TOKEN"))
+      gitClient <- GitClient.make[IO]("SergeiIonin", "ContractsRegistrator", "contracts", "master", client, sys.env.get("GITHUB_TOKEN"))
       handler  <- ContractsHandler.make[IO](repo, gitClient)
     yield (consumer, handler)).use {
       case (c, h) =>
