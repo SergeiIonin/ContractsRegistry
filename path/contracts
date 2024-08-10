@@ -1,0 +1,10 @@
+syntax = "proto3";
+package schema_registry;
+
+message SchemaMessage {
+  string subject = 1;
+  int32 version = 2;
+  int32 id = 3;
+  string schema = 4;
+  bool deleted = 5;
+}
