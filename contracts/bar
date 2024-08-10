@@ -1,0 +1,1 @@
+{"type":"record","name":"user_extended","fields":[{"name":"firstName","type":"string"},{"name":"lastName","type":"string"},{"name":"age","type":"int"}]}
