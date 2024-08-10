@@ -30,7 +30,8 @@ import org.http4s.AuthScheme.Bearer
 
 import java.nio.file.{Files, Paths}
 
-class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo: String, mainBranch: String, client: Client[F], token: Option[String]) extends GitClient[F]:
+class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo: String, path: String,
+                                                             baseBranch: String, client: Client[F], token: Option[String]) extends GitClient[F]:
   private val gh = GithubClient[F](client, token)
   private val logger = summon[Logger[F]]
 
@@ -41,12 +42,6 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
   
   given commitDataEncoder: EntityEncoder[F, CommitData] = jsonEncoderOf[F, CommitData]
   given commitDataDecoder: EntityDecoder[F, CommitData] = jsonOf[F, CommitData]
-
-  private def postRequest[T](uri: Uri, entity: T)(using EntityEncoder[F, T]): Request[F] =
-    Request[F](
-      Method.POST, uri,
-      headers = Headers(authHeader, acceptHeader, gitHubApiVersionHeader, contentType))
-      .withEntity(entity)
     
   private def getRequest(uri: Uri): Request[F] =
     Request[F](
@@ -92,9 +87,9 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
       }
     )
 
-  override def createNewTree(path: String, baseTreeSha: String, blobSha: String): F[String] =
+  override def createNewTree(fileName: String, baseTreeSha: String, blobSha: String): F[String] =
     for
-      response <- gh.gitData.createTree(owner, repo, Some(baseTreeSha), List(TreeDataSha(path, "100644", "blob", blobSha)))
+      response <- gh.gitData.createTree(owner, repo, Some(baseTreeSha), List(TreeDataSha(s"$path/$fileName", "100644", "blob", blobSha)))
       newTreeSha <- response.result match
         case Left(err) => new RuntimeException(s"error creating tree: ${err.getMessage()}").raiseError[F, String]
         case Right(tree) => tree.sha.pure[F]
@@ -116,9 +111,9 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
                     case Right(_) => ().pure[F]
     yield ()
 
-  override def createPR(title: String, body: String, head: String, base: String): F[Unit] = 
+  override def createPR(title: String, body: String, head: String): F[Unit] = 
     for
-      response <- gh.pullRequests.createPullRequest(owner, repo, NewPullRequestData(title, body, false), head, base)
+      response <- gh.pullRequests.createPullRequest(owner, repo, NewPullRequestData(title, body, false), head, baseBranch)
       _ <- response.result match
         case Left(err) => new RuntimeException(s"error creating PR: ${err.getMessage()}").raiseError[F, Unit]
         case Right(pr) => logger.info(s"Created PR ${pr.title}, #${pr.number}")

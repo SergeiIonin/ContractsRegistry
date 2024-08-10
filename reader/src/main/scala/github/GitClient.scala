@@ -11,11 +11,12 @@ trait GitClient[F[_]]:
   def createRef(sha: String, ref: String): F[Unit]
   def createBlob(content: String): F[String]
   def getBaseTreeSha(ref: String): F[String]
-  def createNewTree(path: String, baseTreeSha: String, blobSha: String): F[String]
+  def createNewTree(fileName: String, baseTreeSha: String, blobSha: String): F[String]
   def createCommit(newTreeSha: String, parentCommitSha: String, message: String): F[String]
   def updateBranchRef(branch: String, newCommitSha: String): F[Unit]
-  def createPR(title: String, body: String, head: String, base: String): F[Unit]
+  def createPR(title: String, body: String, head: String): F[Unit]
 
 object GitClient:
-  def make[F[_]: Async: Logger](owner: String, repo: String, mainBranch: String, client: Client[F], token: Option[String]) =
-    Resource.pure[F, GitClient[F]](new GitClientImpl(owner, repo, mainBranch, client, token))
+  def make[F[_]: Async: Logger](owner: String, repo: String, path: String,
+                                baseBranch: String, client: Client[F], token: Option[String]) =
+    Resource.pure[F, GitClient[F]](new GitClientImpl(owner, repo, path, baseBranch, client, token))
