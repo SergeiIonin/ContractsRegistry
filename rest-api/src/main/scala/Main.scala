@@ -2,18 +2,19 @@ package io.github.sergeiionin.contractsregistrator
 
 import cats.effect.{ExitCode, IO, IOApp}
 import org.http4s.ember.client.EmberClientBuilder
-import io.github.sergeiionin.contractsregistrator.http.client.ContractsRegistryHttpClient
-import io.github.sergeiionin.contractsregistrator.serverendpoints.ContractsServerEndpoints
-import io.github.sergeiionin.contractsregistrator.serverendpoints.SwaggerServerEndpoints
+import http.client.ContractsRegistryHttpClient
+import serverendpoints.ContractsServerEndpoints
+import serverendpoints.SwaggerServerEndpoints
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import org.http4s.ember.server.EmberServerBuilder
 import com.comcast.ip4s.{Host, Port, port}
+import config.RestApiApplicationConfig
 
 object Main extends IOApp:
-  // fixme add config
-  val host = "http://localhost"
-  val port = 8080
-  val baseClientUri = s"http://localhost:8081"
+  val config = RestApiApplicationConfig.load
+  val host = config.restApi.host
+  val port = config.restApi.port
+  val baseClientUri = s"${config.schemaRegistry.host}:${config.schemaRegistry.port}"
   
   def run(args: List[String]): IO[ExitCode] =
     (for
