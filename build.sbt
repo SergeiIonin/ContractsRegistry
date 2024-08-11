@@ -37,6 +37,13 @@ lazy val reader = (project in file("reader"))
   )
   .dependsOn(common)
 
+lazy val restApi = (project in file("rest-api"))
+  .settings(commonSettings)
+  .settings(
+    name := "rest-api",
+  )
+  .dependsOn(common)
+
 lazy val proto = project
   .settings(commonSettings)
   .settings(
