@@ -1,11 +1,10 @@
 package io.github.sergeiionin.contractsregistrator
 package handler
 
-import repository.ContractsRepository
-
 import cats.effect.Resource
 import cats.Monad
 import domain.Contract
+import repository.ContractsRepository
 
 import github.GitClient
 

@@ -84,6 +84,7 @@ object Dependencies {
       "org.tpolecat" %% "skunk-circe" % "0.6.4",
       "com.47deg" %% "github4s" % "0.33.3",
       "ch.qos.logback" % "logback-classic" % "1.5.6",
+      "io.scalaland" %% "chimney" % "1.3.0"
     )
 
   lazy val testDependencies =

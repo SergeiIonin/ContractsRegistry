@@ -8,8 +8,8 @@ import cats.syntax.functor.*
 import cats.implicits.catsSyntaxFlatMapOps
 import cats.syntax.applicative.*
 import fs2.kafka.{CommittableConsumerRecord, KafkaConsumer}
-import repository.ContractsRepository
 import domain.Contract
+import repository.ContractsRepository
 
 import github.GitClient
 
