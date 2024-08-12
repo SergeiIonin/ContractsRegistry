@@ -14,3 +14,9 @@ final case class Contract(
 object Contract:
   given encoder: Encoder[Contract] = Encoder.derived[Contract]
   given decoder: Decoder[Contract] = Decoder.derived[Contract]
+
+final case class SubjectAndVersion(subject: String, version: Int)
+
+object SubjectAndVersion:
+  given encoder: Encoder[SubjectAndVersion] = Encoder.derived[SubjectAndVersion]
+  given decoder: Decoder[SubjectAndVersion] = Decoder.derived[SubjectAndVersion]
