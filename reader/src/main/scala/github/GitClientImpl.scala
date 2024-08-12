@@ -13,7 +13,7 @@ import org.typelevel.log4cats.{Logger, LoggerFactory}
 import org.http4s.client.Client
 import github4s.Github
 import github4s.GHResponse
-import github4s.domain.{NewPullRequestData, Project, TreeData, TreeDataBlob, TreeDataSha}
+import github4s.domain.{Branch, NewPullRequestData, Project, TreeData, TreeDataBlob, TreeDataSha}
 import github4s.GithubClient
 import github4s.GithubClient
 import github4s.algebras.GithubAPIs
@@ -53,10 +53,12 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
     for
       response <- gh.repos.listCommits(owner, repo)
       latestSha <- response.result match
-        case Left(err) => new RuntimeException(s"error fetching list of commits: ${err.getMessage()}").raiseError[F, String] //MonadThrow.raiseError[F, String]()
-        case Right(commits) => commits.lastOption match
-          case None => new RuntimeException(s"no commits found in the $repo").raiseError[F, String]
-          case Some(commit) => commit.sha.pure[F]
+        case Left(err) => 
+          new RuntimeException(s"error fetching list of commits: ${err.getMessage()}").raiseError[F, String]
+        case Right(commits) =>
+          commits.headOption match
+            case None => new RuntimeException(s"no commits found in the $repo").raiseError[F, String]
+            case Some(commit) => commit.sha.pure[F]
     yield latestSha
 
   override def createRef(sha: String, ref: String): F[Unit] =
@@ -89,7 +91,7 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
 
   override def createNewTree(fileName: String, baseTreeSha: String, blobSha: String): F[String] =
     for
-      response <- gh.gitData.createTree(owner, repo, Some(baseTreeSha), List(TreeDataSha(s"$path/$fileName.proto", "100644", "blob", blobSha)))
+      response <- gh.gitData.createTree(owner, repo, Some(baseTreeSha), List(TreeDataSha(s"$path/$fileName", "100644", "blob", blobSha)))
       newTreeSha <- response.result match
         case Left(err) => new RuntimeException(s"error creating tree: ${err.getMessage()}").raiseError[F, String]
         case Right(tree) => tree.sha.pure[F]
@@ -111,6 +113,22 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
                     case Right(_) => ().pure[F]
     yield ()
 
+  override def getContractSha(fileName: String): F[String] = 
+    for
+      response <- gh.repos.getContents(owner, repo, s"$path/$fileName", None)
+      sha <- response.result match
+        case Left(err) => new RuntimeException(s"error getting file: ${err.getMessage()}").raiseError[F, String]
+        case Right(contentNEL) => contentNEL.head.sha.pure[F]
+    yield sha
+  
+  override def deleteContract(fileName: String, sha: String, branch: String): F[String] = 
+    for
+      response <- gh.repos.deleteFile(owner, repo, s"$path/$fileName", "Delete contract", sha, Some(branch))
+      sha <- response.result match
+        case Left(err) => new RuntimeException(s"error deleting file: ${err.getMessage()}").raiseError[F, String]
+        case Right(response) => response.commit.sha.pure[F]
+    yield sha
+  
   override def createPR(title: String, body: String, head: String): F[Unit] = 
     for
       response <- gh.pullRequests.createPullRequest(owner, repo, NewPullRequestData(title, body, false), head, baseBranch)
