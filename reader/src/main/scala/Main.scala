@@ -95,7 +95,7 @@ object Main extends IOApp:
                     subjectAndVersion.fold[IO[Unit]](
                       e => logger.error(s"Failed to parse delete record: ${e.getMessage}"),
                       sv => logger.info(s"Deleting contract: ${sv.subject}:${sv.version}") >>
-                        h.deleteContractVersion(sv.subject, sv.version)
+                        h.deleteContract(sv.subject)
                     )
                   case NOOP =>
                     logger.info("NOOP record")
