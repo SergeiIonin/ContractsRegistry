@@ -28,10 +28,10 @@ class ContractsRepositoryPostgresImplSpec extends Specification with CatsEffect:
       version INTEGER NOT NULL,
       id INTEGER NOT NULL,
       schema TEXT NOT NULL,
-      PRIMARY KEY (subject, id));""".command).void
+      PRIMARY KEY (subject, version));""".command).void
 
   val testSubject: String = "testSubject"
-  val testId: Int = 1
+  val testId: Int = 3
   val testVersion: Int = 1
   val testSchema: String = "testSchema"
   val testContract: Contract = Contract(testSubject, testVersion, testId, testSchema)
