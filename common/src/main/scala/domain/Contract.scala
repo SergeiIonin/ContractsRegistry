@@ -8,7 +8,8 @@ final case class Contract(
                          subject: String,
                          version: Int,
                          id: Int,
-                         schema: String
+                         schema: String,
+                         deleted: Option[Boolean] = None
 )
 
 object Contract:
