@@ -81,17 +81,21 @@ object Main extends IOApp:
                 keyType match
                   case SCHEMA =>
                     val contract = toContract(recordOpt)
-                    contract.fold[IO[Unit]](
-                      e => logger.error(s"Failed to parse contract: ${e.getMessage}"),
-                      c => logger.info(s"Registering new contract: $c") >>
-                        h.addContract(c)
-                    )
-                  case DELETE_SUBJECT => // todo in case of "soft-delete (DELETE /subjects/<subj>/versions/<ver> keytype is SCHEMA but there's a field "deleted" set to true)"
+                    contract match
+                      case Left(e) => 
+                        logger.error(s"Failed to parse contract: ${e.getMessage}")
+                      case Right(c) if c.deleted.contains(true) =>
+                        logger.info(s"Deleting contract's version: ${c.subject}:${c.version}") >>
+                          h.deleteContractVersion(c.subject, c.version)
+                      case Right(c) =>
+                        logger.info(s"Registering new contract: ${c.subject}:${c.version}") >>
+                          h.addContract(c)
+                  case DELETE_SUBJECT => // fixme in this case we should delete all contracts!
                     val subjectAndVersion = toSubjectAndVersion(recordOpt)
                     subjectAndVersion.fold[IO[Unit]](
                       e => logger.error(s"Failed to parse delete record: ${e.getMessage}"),
                       sv => logger.info(s"Deleting contract: ${sv.subject}:${sv.version}") >>
-                        h.deleteContract(sv.subject, sv.version)
+                        h.deleteContractVersion(sv.subject, sv.version)
                     )
                   case NOOP =>
                     logger.info("NOOP record")

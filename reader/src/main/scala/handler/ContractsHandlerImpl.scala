@@ -18,6 +18,7 @@ class ContractsHandlerImpl[F[_] : Monad : Logger](repository: ContractsRepositor
                                                   gitClient: GitClient[F]) extends ContractsHandler[F]:
   private val logger = summon[Logger[F]]
   
+  // todo it should be simplified
   def addContractPR(contract: Contract): F[Unit] =
     val ref = s"${contract.subject}-${System.currentTimeMillis()}" // fixme should be s"${contract.subject}-${contract.version}"
     for
@@ -51,8 +52,11 @@ class ContractsHandlerImpl[F[_] : Monad : Logger](repository: ContractsRepositor
       _ <- addContractPR(contract)
     yield ()
   
-  def deleteContract(subject: String, version: Int): F[Unit] =
+  def deleteContractVersion(subject: String, version: Int): F[Unit] =
     for
       _ <- repository.delete(subject, version)
       _ <- deleteContractPR(subject, version)
     yield ()
+  
+  // todo implement
+  def deleteContract(subject: String): F[Unit] = ???

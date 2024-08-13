@@ -26,7 +26,7 @@ import org.typelevel.log4cats.Logger
 class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using Logger[F]) extends ContractsRepository[F]:
   private val contractEncoder: skunk.Encoder[Contract] =
     (varchar ~ int4 ~ int4 ~ text).contramap {
-      case Contract(subject, version, id, schema) =>
+      case Contract(subject, version, id, schema, _) =>
         subject ~ version ~ id ~ schema
     }
 
@@ -48,6 +48,7 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using L
   private val deleteCommand: Command[(String, Int)] =
     sql"DELETE FROM contracts WHERE subject = $varchar AND id = $int4".command
 
+  // fixme id should be subject:version
   override def save(contract: Contract): F[Unit] =
     session.prepare(insertCommand).flatMap(_.execute(contract))
       .recoverWith {
@@ -57,11 +58,13 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using L
       }
       .void
 
+  // fixme id should be subject:version
   override def get(subject: String, id: Int): F[Option[Contract]] =
     session.prepare(selectBySubjectAndIdQuery).flatMap(_.option((subject, id)))
 
   override def getAll(): F[fs2.Stream[F, Contract]] =
     session.stream(selectAllQuery)(Void, 10).pure[F]
 
+  // fixme id should be subject:version
   override def delete(subject: String, id: Int): F[Unit] =
     session.prepare(deleteCommand).flatMap(_.execute((subject, id))).void
