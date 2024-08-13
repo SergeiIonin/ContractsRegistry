@@ -11,7 +11,8 @@ import org.typelevel.log4cats.Logger
 
 trait ContractsHandler[F[_]]:
   def addContract(contract: Contract): F[Unit]
-  def deleteContract(subject: String, version: Int): F[Unit]
+  def deleteContractVersion(subject: String, version: Int): F[Unit]
+  def deleteContract(subject: String): F[Unit]
 
 object ContractsHandler:
   def make[F[_] : Monad](repository: ContractsRepository[F],
