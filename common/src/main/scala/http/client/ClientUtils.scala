@@ -16,22 +16,25 @@ object ClientUtils:
   private def authHeader(token: String) = Authorization(Token(Bearer, token))
   private val contentType = Accept(MediaType.application.json)
   
-  def getRequest[F[_]](uri: Uri, token: Option[String]): Request[F] =
-    val headers = token match
+  private def getHeaders(token: Option[String]): Headers =
+    token match
       case Some(t) => Headers(authHeader(t), acceptHeader, gitHubApiVersionHeader, contentType)
       case None => Headers(acceptHeader, gitHubApiVersionHeader, contentType)
-    
+  
+  def getRequest[F[_]](uri: Uri, token: Option[String]): Request[F] =
     Request[F](
       Method.GET, uri,
-      headers = headers
+      headers = getHeaders(token)
     )
 
   def postRequest[F[_], T](uri: Uri, token: Option[String], entity: T)(using EntityEncoder[F, T]): Request[F] =
-    val headers = token match
-      case Some(t) => Headers(authHeader(t), acceptHeader, gitHubApiVersionHeader, contentType)
-      case None => Headers(acceptHeader, gitHubApiVersionHeader, contentType)
-    
     Request[F](
       Method.POST, uri,
-      headers = headers)
+      headers = getHeaders(token))
       .withEntity(entity)
+    
+  def deleteRequest[F[_]](uri: Uri, token: Option[String]): Request[F] =
+    Request[F](
+      Method.DELETE, uri,
+      headers = getHeaders(token)
+    )

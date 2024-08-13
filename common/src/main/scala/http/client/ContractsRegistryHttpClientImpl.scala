@@ -14,3 +14,7 @@ class ContractsRegistryHttpClientImpl[F[_] : Async](client: Client[F]) extends C
   def post[T](uri: Uri, entity: T, token: Option[String])(using EntityEncoder[F, T]): F[Response[F]] = 
     client.run(ClientUtils.postRequest(uri, token, entity))
       .use(resp => resp.pure[F])
+  
+  def delete(uri: Uri, token: Option[String]): F[Response[F]] =
+    client.run(ClientUtils.deleteRequest(uri, token))
+      .use(resp => resp.pure[F])

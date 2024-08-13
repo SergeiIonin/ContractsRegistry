@@ -6,9 +6,11 @@ import cats.effect.kernel.Resource
 import org.http4s.{EntityEncoder, Response, Uri}
 import org.http4s.ember.client.EmberClientBuilder
 
+// todo how token should be passed?
 trait ContractsRegistryHttpClient[F[_]]:
   def get(uri: Uri, token: Option[String]): F[Response[F]]
   def post[T](uri: Uri, entity: T, token: Option[String])(using EntityEncoder[F, T]): F[Response[F]]
+  def delete(uri: Uri, token: Option[String]): F[Response[F]]
   
 object ContractsRegistryHttpClient:
   def make[F[_] : Async](): Resource[F, ContractsRegistryHttpClient[F]] =

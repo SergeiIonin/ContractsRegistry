@@ -25,10 +25,16 @@ trait ContractsEndpoints:
       .in(jsonBody[CreateContractDTO])
       .out(jsonBody[CreateContractResponseDTO])
   
-  val deleteContract =
+  val deleteContractVersion =
     base.delete
       .in(path[String]("name"))
-      .in(path[Int]("id"))
+      .in("versions")
+      .in(path[Int]("version"))
+      .out(jsonBody[DeleteContractVersionResponseDTO])  
+  
+  val deleteContract =
+    base.delete
+      .in(path[String]("contract"))
       .out(jsonBody[DeleteContractResponseDTO])
   
   val getContract =
@@ -43,4 +49,4 @@ trait ContractsEndpoints:
       .out(jsonBody[List[ContractDTO]])
   
   def getEndpoints: List[AnyEndpoint] = 
-    List(createContract, deleteContract, getContract, getContracts)
+    List(createContract, deleteContractVersion, deleteContract, getContract, getContracts)

@@ -11,5 +11,6 @@ final case class CreateContractDTO(schemaType: String = "PROTOBUF",
                                    schema: String) derives Encoder, Decoder, Schema
 final case class CreateContractResponseDTO(name: String, id: Int) derives Encoder, Decoder, Schema
 
-final case class DeleteContractDTO(name: String, id: Int) derives Encoder, Decoder, Schema
-final case class DeleteContractResponseDTO(name: String, id: Int) derives Encoder, Decoder, Schema
+final case class DeleteContractVersionResponseDTO(name: String, version: Int) derives Encoder, Decoder, Schema
+
+final case class DeleteContractResponseDTO(name: String, versions: List[Int]) derives Encoder, Decoder, Schema
