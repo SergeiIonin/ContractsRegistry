@@ -1,7 +1,7 @@
 package io.github.sergeiionin.contractsregistrator
 package handler
 
-import cats.Monad
+import cats.effect.Concurrent
 import cats.data.NonEmptyList
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
@@ -14,7 +14,7 @@ import github.GitClient
 
 import org.typelevel.log4cats.Logger
 
-class ContractsHandlerImpl[F[_] : Monad : Logger](repository: ContractsRepository[F],
+class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepository[F],
                                                   gitClient: GitClient[F]) extends ContractsHandler[F]:
   private val logger = summon[Logger[F]]
   
@@ -58,5 +58,15 @@ class ContractsHandlerImpl[F[_] : Monad : Logger](repository: ContractsRepositor
       _ <- deleteContractPR(subject, version)
     yield ()
   
-  // todo implement
-  def deleteContract(subject: String): F[Unit] = ???
+  // it's on purpose that we delete the each contract's versions as a separate PR
+  def deleteContract(subject: String): F[Unit] =
+    for
+     versions <- repository.getAllVersionsForSubject(subject)
+     _              <- versions
+                        .parEvalMapUnordered(10)(version =>
+                          deleteContractVersion(subject, version)
+                        )
+                        .compile
+                        .drain
+     
+    yield ()  
