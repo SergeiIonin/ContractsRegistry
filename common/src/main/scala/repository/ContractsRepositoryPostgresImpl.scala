@@ -36,6 +36,8 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using L
         Contract(subject, version, id, schema)
     }
 
+  private val subjectAndVersionDecoder: skunk.Decoder[Int] = int4
+
   private val insertCommand: Command[Contract] =
     sql"INSERT INTO contracts (subject, version, id, schema) VALUES ($contractEncoder)".command
 
@@ -44,6 +46,9 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using L
 
   private val selectAllQuery: Query[Void, Contract] =
     sql"SELECT subject, version, id, schema FROM contracts".query(contractDecoder)
+
+  private val selectAllVersionsForSubjectQuery: Query[String, Int] =
+    sql"SELECT version FROM contracts WHERE subject = $varchar".query(subjectAndVersionDecoder)
 
   private val deleteCommand: Command[(String, Int)] =
     sql"DELETE FROM contracts WHERE subject = $varchar AND version = $int4".command
@@ -63,6 +68,9 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using L
 
   override def getAll(): F[fs2.Stream[F, Contract]] =
     session.stream(selectAllQuery)(Void, 10).pure[F]
+
+  override def getAllVersionsForSubject(subject: String): F[fs2.Stream[F, Int]] =
+    session.stream(selectAllVersionsForSubjectQuery)(subject, 10).pure[F]
 
   override def delete(subject: String, version: Int): F[Unit] =
     session.prepare(deleteCommand).flatMap(_.execute((subject, version))).void
