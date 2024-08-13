@@ -31,10 +31,14 @@ class ContractsRepositoryPostgresImplSpec extends Specification with CatsEffect:
       PRIMARY KEY (subject, version));""".command).void
 
   val testSubject: String = "testSubject"
-  val testId: Int = 3
-  val testVersion: Int = 1
-  val testSchema: String = "testSchema"
-  val testContract: Contract = Contract(testSubject, testVersion, testId, testSchema)
+  val testId1: Int = 3
+  val testId2: Int = testId1+1
+  val testVersion1: Int = 1
+  val testVersion2: Int = testVersion1+1
+  val testSchema1: String = "testSchema_1"
+  val testSchema2: String = "testSchema_2"
+  val testContractV1: Contract = Contract(testSubject, testVersion1, testId1, testSchema1)
+  val testContractV2: Contract = Contract(testSubject, testVersion2, testId2, testSchema2)
   
   "ContractsRepositoryPostgresImpl" should {
     "perform CRUD operations correctly" in {
@@ -65,11 +69,15 @@ class ContractsRepositoryPostgresImplSpec extends Specification with CatsEffect:
       yield (session, repo)).use { (s, repository) =>
         for
           _         <- initPostgres(s)
-          _         <- repository.save(testContract)
-          resOpt0   <- repository.get(testSubject, 1)
-          _         <- IO.whenA(resOpt0.isEmpty)(IO.raiseError(new RuntimeException("Contract not found")))
-          res0      =  resOpt0.get
-          _         = res0 must beEqualTo(testContract)
+          _         <- repository.save(testContractV1)
+          _         <- repository.save(testContractV2)
+          resOpt1   <- repository.get(testSubject, 1)
+          _         <- IO.whenA(resOpt1.isEmpty)(IO.raiseError(new RuntimeException("Contract not found")))
+          res1      =  resOpt1.get
+          _         =  res1 must beEqualTo(testContractV1)
+          versionsS <- repository.getAllVersionsForSubject(testSubject)
+          versions  <- versionsS.compile.toList
+          _         =  versions must beEqualTo(List(1, 2))
           _         <- repository.delete(testSubject, 1)
           resOpt1   <- repository.get(testSubject, 1)
           _         =  resOpt1 must beNone
