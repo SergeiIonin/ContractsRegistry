@@ -90,12 +90,12 @@ object Main extends IOApp:
                       case Right(c) =>
                         logger.info(s"Registering new contract: ${c.subject}:${c.version}") >>
                           h.addContract(c)
-                  case DELETE_SUBJECT => // fixme in this case we should delete all contracts!
+                  case DELETE_SUBJECT =>
                     val subjectAndVersion = toSubjectAndVersion(recordOpt)
                     subjectAndVersion.fold[IO[Unit]](
                       e => logger.error(s"Failed to parse delete record: ${e.getMessage}"),
                       sv => logger.info(s"Deleting contract: ${sv.subject}:${sv.version}") >>
-                        h.deleteContractVersion(sv.subject, sv.version)
+                        h.deleteContract(sv.subject)
                     )
                   case NOOP =>
                     logger.info("NOOP record")

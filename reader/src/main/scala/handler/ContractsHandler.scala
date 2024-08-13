@@ -1,8 +1,7 @@
 package io.github.sergeiionin.contractsregistrator
 package handler
 
-import cats.effect.Resource
-import cats.Monad
+import cats.effect.{Resource, Concurrent}
 import domain.Contract
 import repository.ContractsRepository
 import github.GitClient
@@ -15,7 +14,7 @@ trait ContractsHandler[F[_]]:
   def deleteContract(subject: String): F[Unit]
 
 object ContractsHandler:
-  def make[F[_] : Monad](repository: ContractsRepository[F],
+  def make[F[_] : Concurrent](repository: ContractsRepository[F],
                           gitClient: GitClient[F]
                         )(using Logger[F]): Resource[F, ContractsHandler[F]] =
     Resource.pure[F, ContractsHandler[F]](ContractsHandlerImpl[F](repository, gitClient))
