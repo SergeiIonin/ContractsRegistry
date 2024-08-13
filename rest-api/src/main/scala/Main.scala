@@ -31,5 +31,6 @@ object Main extends IOApp:
                                       .build
     yield server).use { _ =>
       IO.println(s"Server started on $host:$port") *>
+      IO.println(s"View REST API reference at $host:$port/docs") *>
       IO.never
     }.as(ExitCode.Success)
