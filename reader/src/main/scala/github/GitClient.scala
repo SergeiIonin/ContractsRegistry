@@ -14,6 +14,8 @@ trait GitClient[F[_]]:
   def createNewTree(fileName: String, baseTreeSha: String, blobSha: String): F[String]
   def createCommit(newTreeSha: String, parentCommitSha: String, message: String): F[String]
   def updateBranchRef(branch: String, newCommitSha: String): F[Unit]
+  def getContractSha(fileName: String): F[String]
+  def deleteContract(fileName: String, sha: String, branch: String): F[String]
   def createPR(title: String, body: String, head: String): F[Unit]
 
 object GitClient:
