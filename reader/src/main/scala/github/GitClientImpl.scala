@@ -27,6 +27,7 @@ import org.http4s.headers.Authorization.given
 import org.http4s.headers.Accept.given
 import org.http4s.Credentials.Token
 import org.http4s.AuthScheme.Bearer
+import domain.Contract
 
 import java.nio.file.{Files, Paths}
 
@@ -34,20 +35,18 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
                                                              baseBranch: String, client: Client[F], token: Option[String]) extends GitClient[F]:
   private val gh = GithubClient[F](client, token)
   private val logger = summon[Logger[F]]
-
-  private val acceptHeader = Header.Raw(CIString("Accept"), "application/vnd.github.v3+json")
-  private val gitHubApiVersionHeader = Header.Raw(CIString("X-GitHub-Api-Version"), "2022-11-28")
-  private val authHeader = Authorization(Token(Bearer, token.getOrElse("")))
-  private val contentType = Accept(MediaType.application.json)
   
   given commitDataEncoder: EntityEncoder[F, CommitData] = jsonEncoderOf[F, CommitData]
   given commitDataDecoder: EntityDecoder[F, CommitData] = jsonOf[F, CommitData]
-    
-  private def getRequest(uri: Uri): Request[F] =
-    Request[F](
-      Method.GET, uri,
-      headers = Headers(authHeader, acceptHeader, gitHubApiVersionHeader, contentType)
-    )
+
+  def getFileName(subject: String, version: Int): String =
+    s"${subject}_v$version.proto"
+
+  private def getFileName(contract: Contract): String =
+    getFileName(contract.subject, contract.version)
+
+  def getBranchName(prefix: String, subject: String, version: Int): String =
+    s"$prefix-$subject-$version"
 
   override def getLatestSHA(): F[String] =
     for
@@ -61,50 +60,14 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
             case Some(commit) => commit.sha.pure[F]
     yield latestSha
 
-  override def createRef(sha: String, ref: String): F[Unit] =
+  override def createBranch(sha: String, branch: String): F[Unit] =
     for
-      response <- gh.gitData.createReference(owner, repo, s"refs/heads/$ref", sha)
+      response <- gh.gitData.createReference(owner, repo, s"refs/heads/$branch", sha)
       _ <- response.result match
         case Left(err) => new RuntimeException(s"error creating ref: ${err.getMessage()}").raiseError[F, Unit]
         case Right(_) => ().pure[F]
     yield ()
-
-  override def createBlob(content: String): F[String] =
-    for
-      response <- gh.gitData.createBlob(owner, repo, content, Some("utf-8"))
-      blobSha <- response.result match
-        case Left(err) => new RuntimeException(s"error creating blob: ${err.getMessage()}").raiseError[F, String]
-        case Right(blob) => logger.info(s"created blob.sha = ${blob.sha}") >> blob.sha.pure[F]
-    yield blobSha
-
-  override def getBaseTreeSha(sha: String): F[String] =
-    val req = getRequest(Uri.unsafeFromString(s"https://api.github.com/repos/$owner/$repo/commits/$sha"))
-    client.run(req).use(resp =>
-      logger.info(s"Fetching base tree sha") >> {
-        resp.status match
-          case org.http4s.Status.Ok =>
-            resp.as[CommitData].map(_.commit.tree.sha)
-              .flatTap(sha => logger.info(s"sha on master: $sha}"))
-          case _ => new RuntimeException(s"Failed to fetch base tree sha: ${resp.status}").raiseError[F, String]
-      }
-    )
-
-  override def createNewTree(fileName: String, baseTreeSha: String, blobSha: String): F[String] =
-    for
-      response <- gh.gitData.createTree(owner, repo, Some(baseTreeSha), List(TreeDataSha(s"$path/$fileName", "100644", "blob", blobSha)))
-      newTreeSha <- response.result match
-        case Left(err) => new RuntimeException(s"error creating tree: ${err.getMessage()}").raiseError[F, String]
-        case Right(tree) => tree.sha.pure[F]
-    yield newTreeSha
-
-  override def createCommit(newTreeSha: String, parentCommitSha: String, message: String): F[String] = 
-    for
-      response     <- gh.gitData.createCommit(owner, repo, message, newTreeSha, List(parentCommitSha), None)
-      newCommitSha <- response.result match
-                        case Left(err) => new RuntimeException(s"error creating commit: ${err.getMessage()}").raiseError[F, String]
-                        case Right(commit) => commit.sha.pure[F]
-    yield newCommitSha
-
+  
   override def updateBranchRef(branch: String, newCommitSha: String): F[Unit] = 
     for
       response <- gh.gitData.updateReference(owner, repo, s"heads/$branch", newCommitSha, true) // todo should force = true?
@@ -121,7 +84,19 @@ class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo
         case Right(contentNEL) => contentNEL.head.sha.pure[F]
     yield sha
   
-  override def deleteContract(fileName: String, sha: String, branch: String): F[String] = 
+  def addContract(contract: Contract, branch: String): F[String] =
+    val fileName = getFileName(contract)
+    for
+      response <- gh.repos.createFile(owner, repo, s"$path/$fileName",
+                                        s"Add contract $fileName",
+                                        contract.schema.getBytes, Some(branch))
+      sha <- response.result match
+        case Left(err) => new RuntimeException(s"error adding file: ${err.getMessage()}").raiseError[F, String]
+        case Right(response) => response.commit.sha.pure[F]
+    yield sha
+  
+  override def deleteContract(subject: String, version: Int, sha: String, branch: String): F[String] =
+    val fileName = getFileName(subject, version)
     for
       response <- gh.repos.deleteFile(owner, repo, s"$path/$fileName", "Delete contract", sha, Some(branch))
       sha <- response.result match
