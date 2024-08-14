@@ -31,8 +31,8 @@ import domain.Contract
 
 import java.nio.file.{Files, Paths}
 
-class GitClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo: String, path: String,
-                                                             baseBranch: String, client: Client[F], token: Option[String]) extends GitClient[F]:
+class GitHubClientImpl[F[_] : Concurrent : MonadThrow : Logger](owner: String, repo: String, path: String,
+                                                                baseBranch: String, client: Client[F], token: Option[String]) extends GitHubClient[F]:
   private val gh = GithubClient[F](client, token)
   private val logger = summon[Logger[F]]
   

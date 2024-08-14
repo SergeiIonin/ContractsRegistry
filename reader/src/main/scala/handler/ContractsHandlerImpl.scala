@@ -10,19 +10,18 @@ import cats.syntax.applicative.*
 import fs2.kafka.{CommittableConsumerRecord, KafkaConsumer}
 import domain.Contract
 import repository.ContractsRepository
-import github.GitClient
+import github.GitHubClient
 
 import org.typelevel.log4cats.Logger
 
 class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepository[F],
-                                                  gitClient: GitClient[F]) extends ContractsHandler[F]:
+                                                  gitClient: GitHubClient[F]) extends ContractsHandler[F]:
   private val logger = summon[Logger[F]]
   
-  // todo it should be simplified
   def addContractPR(contract: Contract): F[Unit] =
     for
       latestSha    <- gitClient.getLatestSHA()
-      branch       = gitClient.getBranchName("add", contract.subject, contract.version)
+      branch       =  gitClient.getBranchName("add", contract.subject, contract.version)
       _            <- gitClient.createBranch(latestSha, branch)
       newCommitSha <- gitClient.addContract(contract, branch)
       _            <- gitClient.updateBranchRef(branch, newCommitSha)
