@@ -10,40 +10,38 @@ import cats.syntax.applicative.*
 import fs2.kafka.{CommittableConsumerRecord, KafkaConsumer}
 import domain.Contract
 import repository.ContractsRepository
-import github.GitClient
+import github.GitHubClient
 
 import org.typelevel.log4cats.Logger
 
 class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepository[F],
-                                                  gitClient: GitClient[F]) extends ContractsHandler[F]:
+                                                  gitClient: GitHubClient[F]) extends ContractsHandler[F]:
   private val logger = summon[Logger[F]]
   
-  // todo it should be simplified
   def addContractPR(contract: Contract): F[Unit] =
-    val ref = s"${contract.subject}-${System.currentTimeMillis()}" // fixme should be s"${contract.subject}-${contract.version}"
     for
-      blobSha       <- gitClient.createBlob(contract.schema)
-      latestSha     <- gitClient.getLatestSHA()
-      _             <- gitClient.createRef(latestSha, ref)
-      baseTreeSha   <- gitClient.getBaseTreeSha(latestSha)
-      newTreeSha    <- gitClient.createNewTree(s"${contract.subject}.proto", baseTreeSha, blobSha)
-      newCommitSha  <- gitClient.createCommit(newTreeSha, latestSha, s"Add contract ${contract.subject}")
-      _             <- gitClient.updateBranchRef(ref, newCommitSha)
+      latestSha    <- gitClient.getLatestSHA()
+      branch       =  gitClient.getBranchName("add", contract.subject, contract.version)
+      _            <- gitClient.createBranch(latestSha, branch)
+      newCommitSha <- gitClient.addContract(contract, branch)
+      _            <- gitClient.updateBranchRef(branch, newCommitSha)
       _            <- logger.info(s"creating a PR for the contract ${contract.subject}")
-      _             <- gitClient.createPR(s"Add contract ${contract.subject}", s"Add contract ${contract.subject}", ref)
+      _            <- gitClient.createPR(s"Add contract ${contract.subject}_${contract.version}",
+                            s"Add contract ${contract.subject}_${contract.version}", branch)
     yield ()
 
   def deleteContractPR(subject: String, version: Int): F[Unit] =
     for
       latestSha    <- gitClient.getLatestSHA()
       fileName     = s"$subject.proto"
-      branch       = s"delete-$subject-$version"
-      _            <- gitClient.createRef(latestSha, branch)
+      branch       = gitClient.getBranchName("delete", subject, version)
+      _            <- gitClient.createBranch(latestSha, branch)
       fileSha      <- gitClient.getContractSha(fileName)
-      _            <- logger.info(s"deleting the file $fileName")
-      newCommitSha <- gitClient.deleteContract(s"$fileName", fileSha, branch) // todo should the contract's name hold the versioin?
+      newCommitSha <- gitClient.deleteContract(subject, version, fileSha, branch)
       _            <- gitClient.updateBranchRef(branch, newCommitSha)
-      _            <- gitClient.createPR(s"Delete contract $fileName", s"Delete contract $fileName", branch)
+      _            <- logger.info(s"deleting the file $fileName")
+      _            <- gitClient.createPR(s"Delete contract $fileName",
+                            s"Delete contract $fileName", branch)
     yield ()
   
   def addContract(contract: Contract): F[Unit] =

@@ -4,7 +4,7 @@ package handler
 import cats.effect.{Resource, Concurrent}
 import domain.Contract
 import repository.ContractsRepository
-import github.GitClient
+import github.GitHubClient
 
 import org.typelevel.log4cats.Logger
 
@@ -15,6 +15,6 @@ trait ContractsHandler[F[_]]:
 
 object ContractsHandler:
   def make[F[_] : Concurrent](repository: ContractsRepository[F],
-                          gitClient: GitClient[F]
+                          gitClient: GitHubClient[F]
                         )(using Logger[F]): Resource[F, ContractsHandler[F]] =
     Resource.pure[F, ContractsHandler[F]](ContractsHandlerImpl[F](repository, gitClient))

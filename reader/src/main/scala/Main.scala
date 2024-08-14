@@ -10,7 +10,7 @@ import repository.ContractsRepository
 import io.circe.{Decoder, parser}
 import io.circe
 import domain.{Contract, SubjectAndVersion}
-import github.GitClient
+import github.GitHubClient
 
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
@@ -65,7 +65,7 @@ object Main extends IOApp:
       client          <- EmberClientBuilder.default[IO].build
       consumer        <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
       schemasConsumer = SchemasKafkaConsumerImpl[IO](consumer)
-      gitClient       <- GitClient.make[IO](contractConfig.owner, contractConfig.repo, contractConfig.path,
+      gitClient       <- GitHubClient.make[IO](contractConfig.owner, contractConfig.repo, contractConfig.path,
                                       contractConfig.baseBranch, client, Some(contractConfig.token))
       handler         <- ContractsHandler.make[IO](repo, gitClient)
     yield (schemasConsumer, handler)).use {
