@@ -53,12 +53,11 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using L
   private val deleteCommand: Command[(String, Int)] =
     sql"DELETE FROM contracts WHERE subject = $varchar AND version = $int4".command
 
-  // fixme id should be subject:version
   override def save(contract: Contract): F[Unit] =
     session.prepare(insertCommand).flatMap(_.execute(contract))
       .recoverWith {
         case SqlState.UniqueViolation(_) => 
-          summon[Logger[F]].info(s"contract with ${contract.subject}:${contract.id} already exists")
+          summon[Logger[F]].info(s"contract with ${contract.subject}:${contract.version} already exists")
             .as(skunk.data.Completion.Insert(0))
       }
       .void
