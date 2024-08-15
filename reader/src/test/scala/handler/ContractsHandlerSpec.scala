@@ -17,25 +17,13 @@ import natchez.Trace.Implicits.noop
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 import domain.Contract
-import repository.ContractsRepository
+import repository.{ContractsRepository, PostgresHelper}
 import github.{GitHubClient, GitHubClientTestImpl}
 
-
-class ContractsHandlerSpec extends Specification with CatsEffect:
+class ContractsHandlerSpec extends Specification with CatsEffect with PostgresHelper[IO]:
   import ContractsHandlerSpec.given
 
   val logger: Logger[IO] = summon[Logger[IO]]
-
-  val container: PostgreSQLContainer = PostgreSQLContainer()
-
-  def initPostgres(session: Session[IO]): IO[Unit] =
-    session.execute(
-      sql"""CREATE TABLE contracts(
-        subject VARCHAR NOT NULL,
-        version INTEGER NOT NULL,
-        id INTEGER NOT NULL,
-        schema TEXT NOT NULL,
-        PRIMARY KEY (subject, version));""".command).void
 
   val testSubject: String = "testSubject"
   val testId1: Int = 3
@@ -46,29 +34,12 @@ class ContractsHandlerSpec extends Specification with CatsEffect:
   val testSchema2: String = "testSchema_2"
   val testContractV1: Contract = Contract(testSubject, testVersion1, testId1, testSchema1)
   val testContractV2: Contract = Contract(testSubject, testVersion2, testId2, testSchema2)
-
-  val postgresResource: Resource[IO, PostgreSQLContainer] =
-    Resource.make(IO.delay {
-      container.start()
-      container
-    })(c => {
-      IO.delay(c.stop())
-    })
-
-  def sessionResource(container: PostgreSQLContainer): Resource[IO, Session[IO]] =
-    Session.single[IO](
-      host = container.containerIpAddress,
-      port = container.firstMappedPort,
-      user = container.username,
-      password = Some(container.password),
-      database = container.databaseName
-    )
-
+  
   "ContractsHandler" should {
     "add and delete contracts" in {
       (for
         postgres  <- postgresResource
-        session   <- sessionResource(postgres)
+        session   <- sessionPooledResource(postgres)
         _         <- Resource.eval(initPostgres(session))
         repo      <- ContractsRepository.make[IO](session)
         gitClient <- GitHubClient.test[IO]()
