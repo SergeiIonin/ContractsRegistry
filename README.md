@@ -12,9 +12,9 @@ Microservices contracts are governed via this service leveraging `Schema Registr
 contracts handing clean and transparent.
 
 Thus, onboarding of the new contract consists of 2 steps:
-  - Request via REST API to `ContractsRegistrator`
-  - Approve of the PR to `owner:repo:branch`
+  - Request via REST API to `ContractsRegistry`
+  - Approve of the PR to `owner:repo:branch` with the new contract `<contract_name>_v<contract_version>.proto` (e.g. `foo_v1.proto`)
 
-Note: it's implied that the repository holding the contracts is a standalone repository where `.proto` files are compiled. 
+Note: it's implied that the repository holding the contracts is a standalone repository where `.proto` files are hosted (and maybe also compiled). 
 
-Project doesn't support deleting of the contracts and rich REST API at the moment.
+It's also possible to delete contract version (`foo_v1.proto`) or the all contracts for the prefix (e.g. all contracts starting with `foo`).
