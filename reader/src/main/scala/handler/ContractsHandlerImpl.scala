@@ -33,7 +33,7 @@ class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepo
   def deleteContractPR(subject: String, version: Int): F[Unit] =
     for
       latestSha    <- gitClient.getLatestSHA()
-      fileName     = s"$subject.proto"
+      fileName     = gitClient.getFileName(subject, version)
       branch       = gitClient.getBranchName("delete", subject, version)
       _            <- gitClient.createBranch(latestSha, branch)
       fileSha      <- gitClient.getContractSha(fileName)

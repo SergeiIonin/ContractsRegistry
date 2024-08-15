@@ -59,6 +59,9 @@ class ContractsRepositoryPostgresImplSpec extends Specification with CatsEffect:
       password = Some(container.password),
       database = container.databaseName
     )
+    
+  def delete(repo: ContractsRepository[IO], subject: String, version: Int): IO[Unit] =
+      repo.delete(subject, version).void
 
   "ContractsRepositoryPostgresImpl" should {
     "perform CRUD operations correctly" in {
@@ -66,33 +69,37 @@ class ContractsRepositoryPostgresImplSpec extends Specification with CatsEffect:
         postgres <- postgresResource
         session <- sessionResource(postgres)
         repo <- ContractsRepository.make[IO](session)
-      yield (session, repo)).use { (s, repository) =>
-        for
-          _         <- initPostgres(s)
-          _         <- repository.save(testContractV1)
-          _         <- repository.save(testContractV2)
-          resOpt1   <- repository.get(testSubject, 1)
-          _         <- IO.whenA(resOpt1.isEmpty)(IO.raiseError(new RuntimeException("Contract not found")))
-          res1      =  resOpt1.get
-          _         =  res1 must beEqualTo(testContractV1)
-          versionsS <- repository.getAllVersionsForSubject(testSubject)
-          versions  <- versionsS.compile.toList
-          _         =  versions must beEqualTo(List(1, 2))
-          _         <- repository.delete(testSubject, 2)
-          resOpt1   <- repository.get(testSubject, 2)
-          _         =  resOpt1 must beNone
-          _         <- repository.save(testContractV2)
-          versionsS <- repository.getAllVersionsForSubject(testSubject)
-          versions  <- versionsS.compile.toLyist
-          _         =  versions must beEqualTo(List(1, 2))
-          _         <- versionsS.parEvalMapUnordered(10)(version =>
-                          repository.delete(testSubject, version)
-                       ).compile.drain
-          resOpt1   <- repository.get(testSubject, 1)
-          resOpt2   <- repository.get(testSubject, 2)
-          _         = resOpt1 must beNone
-          _         = resOpt2 must beNone
-        yield true
+      yield (session, repo)).use { (s, repository) => {
+            (for
+              _ <- initPostgres(s)
+              _ <- repository.save(testContractV1)
+              _ <- repository.save(testContractV2)
+              resOpt1 <- repository.get(testSubject, 1)
+              _ <- IO.whenA(resOpt1.isEmpty)(IO.raiseError(new RuntimeException("Contract not found")))
+              res1 = resOpt1.get
+              _ = res1 must beEqualTo(testContractV1)
+              versionsS <- repository.getAllVersionsForSubject(testSubject)
+              versions <- versionsS.compile.toList
+              _ = versions must beEqualTo(List(1, 2))
+              _ <- repository.delete(testSubject, 2)
+              resOpt1 <- repository.get(testSubject, 2)
+              _ = resOpt1 must beNone
+              _ <- repository.save(testContractV2)
+            yield ()).*>
+            for
+              versionsS <- repository.getAllVersionsForSubject(testSubject)
+              versions <- versionsS.compile.toList
+              _ = versions must beEqualTo(List(1, 2))
+              _ <- versionsS.parEvalMapUnordered(10)(version =>
+                delete(repository, testSubject, version)
+                //repository.delete(testSubject, version)
+              ).compile.drain
+              resOpt1 <- repository.get(testSubject, 1)
+              resOpt2 <- repository.get(testSubject, 2)
+              _ = resOpt1 must beNone
+              _ = resOpt2 must beNone
+            yield true
+          }  
       }
     }
   }

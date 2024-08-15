@@ -4,6 +4,7 @@ import cats.data.NonEmptyList
 import cats.effect.{ExitCode, IO, IOApp}
 import fs2.kafka.{ConsumerSettings, Deserializer, KafkaConsumer}
 import fs2.kafka.*
+import cats.syntax.option.*
 import handler.ContractsHandler
 import repository.ContractsRepository
 
@@ -61,12 +62,15 @@ object Main extends IOApp:
     
     (for
       session         <- Session.single[IO](host = postgres.host, port = postgres.port, user = postgres.user, database = postgres.database)
+      /*session         <- Session.pooled[IO](host = postgres.host, port = postgres.port, user = postgres.user,
+        database = postgres.database, password = postgres.password.some, max = 10)*/
       repo            <- ContractsRepository.make[IO](session)
       client          <- EmberClientBuilder.default[IO].build
       consumer        <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
       schemasConsumer = SchemasKafkaConsumerImpl[IO](consumer)
-      gitClient       <- GitHubClient.make[IO](contractConfig.owner, contractConfig.repo, contractConfig.path,
-                                      contractConfig.baseBranch, client, Some(contractConfig.token))
+      /*gitClient       <- GitHubClient.make[IO](contractConfig.owner, contractConfig.repo, contractConfig.path,
+                                      contractConfig.baseBranch, client, Some(contractConfig.token))*/
+      gitClient       <- GitHubClient.test[IO]()
       handler         <- ContractsHandler.make[IO](repo, gitClient)
     yield (schemasConsumer, handler)).use {
       case (sc, h) =>
