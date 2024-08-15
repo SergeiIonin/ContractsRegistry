@@ -48,14 +48,6 @@ object Dependencies {
     "com.github.fd4s" %% "fs2-kafka" % "3.5.1"
   )
 
-  lazy val grpc = Seq(
-    "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion,
-    "com.thesamet.scalapb" %% "scalapb-runtime"      % scalapb.compiler.Version.scalapbVersion % "protobuf",
-    "io.grpc"              % "grpc-protobuf"         % scalapb.compiler.Version.grpcJavaVersion,
-    "io.grpc"              % "grpc-netty"            % scalapb.compiler.Version.grpcJavaVersion,
-    "io.grpc"              % "grpc-netty-shaded"     % scalapb.compiler.Version.grpcJavaVersion,
-  )
-
   lazy  val http4s = Seq(
     "org.http4s" %% "http4s-circe"        % Versions.http4s,
     "org.http4s" %% "http4s-ember-client" % Versions.http4s,
