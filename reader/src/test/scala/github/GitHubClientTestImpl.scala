@@ -9,11 +9,13 @@ import domain.Contract
 import cats.syntax.applicativeError.*
 
 final class GitHubClientTestImpl[F[_] : Monad : MonadThrow] extends GitHubClient[F]:
+    private val generateSha: String = Random.alphanumeric.take(40).mkString
+
     private val shaToContract = mutable.Map[String, String]() // sha -> fileContent
     private val contractToSha = mutable.Map[String, String]() // fileName -> sha
     private val branches = mutable.Map[String, String]() // branchName -> sha
-    private val latestSha = generateSha()
-  
+
+    private val latestSha = generateSha
 
     def getFileName(subject: String, version: Int): String = s"${subject}_v$version.proto"
     
@@ -55,6 +57,3 @@ final class GitHubClientTestImpl[F[_] : Monad : MonadThrow] extends GitHubClient
     
     def createPR(title: String, body: String, head: String): F[Unit] = 
       Monad[F].pure(())
-
-
-
