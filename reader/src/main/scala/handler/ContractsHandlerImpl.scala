@@ -25,7 +25,7 @@ class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepo
       _            <- gitClient.createBranch(latestSha, branch)
       newCommitSha <- gitClient.addContract(contract, branch)
       _            <- gitClient.updateBranchRef(branch, newCommitSha)
-      _            <- logger.info(s"creating a PR for the contract ${contract.subject}")
+      _            <- logger.info(s"creating a PR for the contract ${contract.subject}:${contract.version}")
       _            <- gitClient.createPR(s"Add contract ${contract.subject}_${contract.version}",
                             s"Add contract ${contract.subject}_${contract.version}", branch)
     yield ()
