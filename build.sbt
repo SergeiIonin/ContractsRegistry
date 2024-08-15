@@ -14,7 +14,6 @@ lazy val commonSettings = Seq(
       Dependencies.tapirDependencies ++
       Dependencies.http4s ++
       Dependencies.fs2 ++
-      Dependencies.grpc ++
       Dependencies.schemaRegistry ++
       Dependencies.miscDependencies ++
       Dependencies.testDependencies ++
@@ -43,20 +42,6 @@ lazy val restApi = (project in file("rest-api"))
     name := "rest-api",
   )
   .dependsOn(common)
-
-lazy val proto = project
-  .settings(commonSettings)
-  .settings(
-    name := "proto",
-  )
-  .settings(
-    libraryDependencies ++= {
-      Seq(
-        "com.google.protobuf" % "protobuf-java" % "4.27.2" % "protobuf",
-        "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion % "protobuf"
-      )
-    })
-  .enablePlugins(Fs2Grpc)
 
 val res = Seq(
   "Confluent"                 at "https://packages.confluent.io/maven/",
