@@ -16,5 +16,5 @@ trait ContractsRepository[F[_]]:
   def delete(subject: String, version: Int): F[Unit]
   
 object ContractsRepository:
-  def make[F[_] : Async](session: Session[F])(using Logger[F]): Resource[F, ContractsRepository[F]] =
+  def make[F[_] : Async](session: Resource[F, Session[F]])(using Logger[F]): Resource[F, ContractsRepository[F]] =
     Resource.pure[F, ContractsRepository[F]](ContractsRepositoryPostgresImpl[F](session))

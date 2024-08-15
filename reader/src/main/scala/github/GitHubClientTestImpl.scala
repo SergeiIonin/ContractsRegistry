@@ -1,12 +1,14 @@
 package io.github.sergeiionin.contractsregistrator
 package github
 
+import domain.Contract
+
+import cats.syntax.*
+import cats.syntax.applicativeError.*
+import cats.{Monad, MonadThrow}
+
 import scala.collection.mutable
 import scala.util.Random
-import cats.{Monad, MonadThrow}
-import cats.syntax.*
-import domain.Contract
-import cats.syntax.applicativeError.*
 
 final class GitHubClientTestImpl[F[_] : Monad : MonadThrow] extends GitHubClient[F]:
     private val generateSha: String = Random.alphanumeric.take(40).mkString
@@ -36,18 +38,18 @@ final class GitHubClientTestImpl[F[_] : Monad : MonadThrow] extends GitHubClient
     def addContract(contract: Contract, branch: String): F[String] = 
       val fileName = getFileName(contract.subject, contract.version)
       Monad[F].pure {
-        val sha = generateSha()
+        val sha = generateSha
         shaToContract(sha) = contract.schema
         contractToSha(fileName) = sha
         sha
       }
     
     def deleteContract(subject: String, version: Int, sha: String, branch: String): F[String] =
-      val fileName = getFileName(contract.subject, contract.version)
+      val fileName = getFileName(subject, version)
       Monad[F].pure {
         shaToContract.remove(sha)
         contractToSha.remove(fileName)
-        generateSha()
+        generateSha
       }
     
     def updateBranchRef(branch: String, newCommitSha: String): F[Unit] =

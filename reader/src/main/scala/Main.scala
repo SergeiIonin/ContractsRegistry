@@ -4,6 +4,7 @@ import cats.data.NonEmptyList
 import cats.effect.{ExitCode, IO, IOApp}
 import fs2.kafka.{ConsumerSettings, Deserializer, KafkaConsumer}
 import fs2.kafka.*
+import cats.syntax.option.*
 import handler.ContractsHandler
 import repository.ContractsRepository
 
@@ -60,7 +61,8 @@ object Main extends IOApp:
         .withProperties(consumerProps)
     
     (for
-      session         <- Session.single[IO](host = postgres.host, port = postgres.port, user = postgres.user, database = postgres.database)
+      session         <- Session.pooled[IO](host = postgres.host, port = postgres.port, user = postgres.user,
+                            database = postgres.database, password = postgres.password.some, max = 10)
       repo            <- ContractsRepository.make[IO](session)
       client          <- EmberClientBuilder.default[IO].build
       consumer        <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
@@ -94,7 +96,7 @@ object Main extends IOApp:
                     val subjectAndVersion = toSubjectAndVersion(recordOpt)
                     subjectAndVersion.fold[IO[Unit]](
                       e => logger.error(s"Failed to parse delete record: ${e.getMessage}"),
-                      sv => logger.info(s"Deleting contract: ${sv.subject}:${sv.version}") >>
+                      sv => logger.info(s"Deleting contract: ${sv.subject}:${sv.version}") >> // fixme rm ${sv.version}
                         h.deleteContract(sv.subject)
                     )
                   case NOOP =>
