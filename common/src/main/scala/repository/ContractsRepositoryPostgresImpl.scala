@@ -23,7 +23,7 @@ import domain.Contract.given
 import cats.effect.kernel.Async
 import org.typelevel.log4cats.Logger
 
-class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using Logger[F]) extends ContractsRepository[F]:
+class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Session[F]])(using Logger[F]) extends ContractsRepository[F]:
   private val contractEncoder: skunk.Encoder[Contract] =
     (varchar ~ int4 ~ int4 ~ text).contramap {
       case Contract(subject, version, id, schema, _) =>
@@ -54,22 +54,32 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](session: Session[F])(using L
     sql"DELETE FROM contracts WHERE subject = $varchar AND version = $int4".command
 
   override def save(contract: Contract): F[Unit] =
-    session.prepare(insertCommand).flatMap(_.execute(contract))
-      .recoverWith {
-        case SqlState.UniqueViolation(_) => 
-          summon[Logger[F]].info(s"contract with ${contract.subject}:${contract.version} already exists")
-            .as(skunk.data.Completion.Insert(0))
-      }
-      .void
+    sessionR.use { session =>
+      session.prepare(insertCommand).flatMap(_.execute(contract))
+        .recoverWith {
+          case SqlState.UniqueViolation(_) => 
+            summon[Logger[F]].info(s"contract with ${contract.subject}:${contract.version} already exists")
+              .as(skunk.data.Completion.Insert(0))
+        }
+        .void
+    }
 
   override def get(subject: String, version: Int): F[Option[Contract]] =
-    session.prepare(selectBySubjectAndVersionQuery).flatMap(_.option((subject, version)))
+    sessionR.use { session =>
+      session.prepare(selectBySubjectAndVersionQuery).flatMap(_.option((subject, version)))
+    }
 
   override def getAll(): F[fs2.Stream[F, Contract]] =
-    session.stream(selectAllQuery)(Void, 10).pure[F]
+    sessionR.use { session =>
+      session.stream(selectAllQuery)(Void, 10).pure[F]
+    }
 
   override def getAllVersionsForSubject(subject: String): F[fs2.Stream[F, Int]] =
-    session.stream(selectAllVersionsForSubjectQuery)(subject, 10).pure[F]
+    sessionR.use { session =>
+      session.stream(selectAllVersionsForSubjectQuery)(subject, 10).pure[F]
+    }
 
   override def delete(subject: String, version: Int): F[Unit] =
-    session.prepare(deleteCommand).flatMap(_.execute((subject, version))).void
+    sessionR.use { session =>
+      session.prepare(deleteCommand).flatMap(_.execute((subject, version))).void
+    }
