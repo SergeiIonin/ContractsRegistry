@@ -35,7 +35,7 @@ lazy val reader = (project in file("reader"))
   .settings(
     name := "reader",
   )
-  .dependsOn(common)
+  .dependsOn(common % "compile->compile;test->test")
 
 lazy val restApi = (project in file("rest-api"))
   .settings(commonSettings)
