@@ -3,14 +3,18 @@ package io.github.sergeiionin.contractsregistrator
 import cats.effect.{ExitCode, IO, IOApp}
 import org.http4s.ember.client.EmberClientBuilder
 import http.client.ContractsRegistryHttpClient
-import serverendpoints.ContractsServerEndpoints
+import serverendpoints.{ContractsServerEndpoints, WebhooksServerEndpoints}
 import serverendpoints.SwaggerServerEndpoints
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import org.http4s.ember.server.EmberServerBuilder
 import com.comcast.ip4s.{Host, Port, port}
 import config.RestApiApplicationConfig
+import org.typelevel.log4cats.slf4j.Slf4jLogger
+import org.typelevel.log4cats.{Logger, LoggerFactory}
 
 object Main extends IOApp:
+  given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
+  
   val config = RestApiApplicationConfig.load
   val host = config.restApi.host
   val port = config.restApi.port
@@ -20,8 +24,11 @@ object Main extends IOApp:
     (for
       contractsClient           <- ContractsRegistryHttpClient.make[IO]()
       contractsServerEndpoints  = ContractsServerEndpoints[IO](baseClientUri, contractsClient)
-      serverEndpoints           = contractsServerEndpoints.serverEndpoints
-      swaggerServerEndpoints    = SwaggerServerEndpoints(contractsServerEndpoints.getEndpoints).getSwaggerUIServerEndpoints()
+      webhooksServerEndpoints   = WebhooksServerEndpoints[IO]()
+      serverEndpoints           = contractsServerEndpoints.serverEndpoints ++ webhooksServerEndpoints.serverEndpoints
+      swaggerServerEndpoints    = SwaggerServerEndpoints(contractsServerEndpoints.getEndpoints ++
+                                          webhooksServerEndpoints.getEndpoints)
+                                            .getSwaggerUIServerEndpoints()
       routes                    = Http4sServerInterpreter[IO]().toRoutes(serverEndpoints ++ swaggerServerEndpoints)
       server                    <- EmberServerBuilder
                                       .default[IO]

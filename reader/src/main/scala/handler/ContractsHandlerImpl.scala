@@ -8,7 +8,7 @@ import cats.syntax.functor.*
 import cats.implicits.catsSyntaxFlatMapOps
 import cats.syntax.applicative.*
 import fs2.kafka.{CommittableConsumerRecord, KafkaConsumer}
-import domain.Contract
+import domain.{Contract, ContractPullRequest}
 import repository.ContractsRepository
 import github.GitHubClient
 
@@ -25,9 +25,9 @@ class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepo
       _            <- gitClient.createBranch(latestSha, branch)
       newCommitSha <- gitClient.addContract(contract, branch)
       _            <- gitClient.updateBranchRef(branch, newCommitSha)
+      contractPR   =  ContractPullRequest.fromContract(contract)
       _            <- logger.info(s"creating a PR for the contract ${contract.subject}:${contract.version}")
-      _            <- gitClient.createPR(s"Add contract ${contract.subject}_${contract.version}",
-                            s"Add contract ${contract.subject}_${contract.version}", branch)
+      _            <- gitClient.createPR(contractPR.getTitle(), contractPR.getBody(), branch)
     yield ()
 
   def deleteContractPR(subject: String, version: Int): F[Unit] =
@@ -39,9 +39,9 @@ class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepo
       fileSha      <- gitClient.getContractSha(fileName)
       newCommitSha <- gitClient.deleteContract(subject, version, fileSha, branch)
       _            <- gitClient.updateBranchRef(branch, newCommitSha)
+      contractPR   =  ContractPullRequest(subject, version, isDeleted = false)
       _            <- logger.info(s"deleting the file $fileName")
-      _            <- gitClient.createPR(s"Delete contract $fileName",
-                            s"Delete contract $fileName", branch)
+      _            <- gitClient.createPR(contractPR.getTitle(), contractPR.getBody(), branch)
     yield ()
   
   def addContract(contract: Contract): F[Unit] =
