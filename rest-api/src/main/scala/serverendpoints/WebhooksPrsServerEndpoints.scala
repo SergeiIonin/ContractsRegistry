@@ -13,15 +13,16 @@ import cats.effect.kernel.Async
 import cats.syntax.all.*
 import cats.syntax.monad.*
 import dto.github.webhooks.{PrErrorDTO, PrWebhookResponseDTO, BadRequestErrorDTO as PrBadRequestErrorDTO}
-
 import domain.ContractPullRequest
+
+import io.github.sergeiionin.contractsregistrator.producer.GitHubEventsProducer
 import org.http4s.circe.{jsonEncoderOf, jsonOf}
 import org.http4s.{EntityDecoder, EntityEncoder, Uri}
 import org.typelevel.log4cats.Logger
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
 
-class WebhooksServerEndpoints[F[_] : Async : MonadThrow : Logger]() extends WebhooksEndpoints:
+class WebhooksServerEndpoints[F[_] : Async : MonadThrow : Logger](producer: GitHubEventsProducer[F, ]) extends WebhooksEndpoints:
   import ContractsServerEndpoints.given
   
   private val logger = summon[Logger[F]]
