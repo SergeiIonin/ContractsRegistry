@@ -1,7 +1,7 @@
 package io.github.sergeiionin.contractsregistrator
 package endpoints
 
-import io.github.sergeiionin.contractsregistrator.dto.*
+import dto.*
 import sttp.tapir.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.Schema
