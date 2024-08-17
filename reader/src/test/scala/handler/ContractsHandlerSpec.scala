@@ -36,7 +36,7 @@ class ContractsHandlerSpec extends Specification with CatsEffect with PostgresHe
   val testContractV2: Contract = Contract(testSubject, testVersion2, testId2, testSchema2)
   
   "ContractsHandler" should {
-    "add and delete contracts" in {
+    "add, set isMerged status and delete contracts" in {
       (for
         postgres  <- postgresResource
         session   <- sessionPooledResource(postgres)
@@ -48,6 +48,14 @@ class ContractsHandlerSpec extends Specification with CatsEffect with PostgresHe
           for
             _ <- h.addContract(testContractV1)
             _ <- h.addContract(testContractV2)
+            versionsS <- r.getAllVersionsForSubject(testSubject)
+            versions <- versionsS.compile.toList
+            _ <- logger.info(s"versions before deleting: $versions")
+            _ = versions must beEqualTo(List(1, 2))
+            _ <- h.updateIsMergedStatus(testSubject, testVersion2)
+            contractOpt <- r.get(testSubject, testVersion2)
+            _ <- logger.info(s"contract after setting isMerged: $contractOpt")
+            _ = contractOpt.exists(_.isMerged) must beTrue
             _ <- h.deleteContract(testSubject)
             versionsS <- r.getAllVersionsForSubject(testSubject)
             versions <- versionsS.compile.toList
