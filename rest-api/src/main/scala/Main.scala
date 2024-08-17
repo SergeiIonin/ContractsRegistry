@@ -3,7 +3,7 @@ package io.github.sergeiionin.contractsregistrator
 import config.RestApiApplicationConfig
 import http.client.ContractsRegistryHttpClient
 import producer.GitHubEventsProducer
-import producer.events.prs.{PrClosed, PrClosedKey}
+import domain.events.prs.{PrClosed, PrClosedKey}
 import serverendpoints.{ContractsServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
 
 import cats.effect.{ExitCode, IO, IOApp}
@@ -15,7 +15,7 @@ import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
 import io.circe.syntax.* 
-import producer.events.prs.given
+import domain.events.prs.given
 
 object Main extends IOApp:
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]

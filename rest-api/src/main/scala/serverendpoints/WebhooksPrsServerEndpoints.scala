@@ -8,7 +8,7 @@ import dto.schemaregistry.DTO.*
 import endpoints.WebhooksEndpoints
 import http.client.ContractsRegistryHttpClient
 import producer.GitHubEventsProducer
-import producer.events.prs.{PrClosed, PrClosedKey}
+import domain.events.prs.{PrClosed, PrClosedKey}
 import repository.ContractsRepository
 
 import cats.effect.Concurrent
