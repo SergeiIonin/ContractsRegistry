@@ -10,6 +10,7 @@ import repository.ContractsRepository
 
 import io.circe.{Decoder, parser}
 import io.circe
+import io.circe.syntax.given
 import domain.{Contract, SubjectAndVersion}
 import github.GitHubClient
 
@@ -22,6 +23,8 @@ import config.ApplicationConfig
 import schemaregistry.KeyType
 import schemaregistry.KeyType.*
 import schemaregistry.schemasconsumer.SchemasKafkaConsumerImpl
+
+import domain.events.prs.{PrClosed, PrClosedKey}
 
 object Main extends IOApp:
   
@@ -36,8 +39,8 @@ object Main extends IOApp:
     
     given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-    def parseRecord[R : Decoder](record: Option[String]): Either[circe.Error, R] =
-      record match
+    def parseRaw[R : Decoder](raw: Option[String]): Either[circe.Error, R] =
+      raw match
         case None => Left(circe.DecodingFailure("Record is empty", List.empty))
         case Some(r) => 
           parser.parse(r).flatMap(json => {
@@ -45,10 +48,10 @@ object Main extends IOApp:
         })
     
     def toContract(recordRaw: Option[String]): Either[circe.Error, Contract] =
-      parseRecord[Contract](recordRaw)
+      parseRaw[Contract](recordRaw)
     
     def toSubjectAndVersion(recordRaw: Option[String]): Either[circe.Error, SubjectAndVersion] =
-      parseRecord[SubjectAndVersion](recordRaw)
+      parseRaw[SubjectAndVersion](recordRaw)
     
     given Deserializer[IO, Bytes] = Deserializer.lift(bs => IO.pure(Bytes(bs)))
     
@@ -91,7 +94,24 @@ object Main extends IOApp:
     
     def processEventRecord(key: String,
                            recordOpt: Option[String],
-                           handler: ContractsHandler[IO]): IO[Unit] = IO.unit
+                           handler: ContractsHandler[IO]): IO[Unit] =
+      def updateOrDeleteContract(subject: String, version: Int, isMerged: Boolean): IO[Unit] =
+        val title = s"PR for $subject:$version"
+        if isMerged then
+          logger.info(s"$title was merged") >>
+            handler.updateIsMergedStatus(subject, version)
+        else
+          logger.info(s"$title was rejected") >>
+            handler.deleteContractVersion(subject, version)
+      
+      val prClosedKey = parseRaw[PrClosedKey](key.some)
+      val prClosed = parseRaw[PrClosed](recordOpt)
+      for
+        key      <- IO.fromEither[PrClosedKey](prClosedKey)
+        pr       <- IO.fromEither[PrClosed](prClosed)
+        isMerged = pr.isMerged
+        _        <- updateOrDeleteContract(key.subject, key.version, isMerged)
+      yield ()
     
     (for
       session         <- Session.pooled[IO](host = postgres.host, port = postgres.port, user = postgres.user,
