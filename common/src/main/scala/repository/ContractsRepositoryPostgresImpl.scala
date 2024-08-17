@@ -41,6 +41,9 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Sessio
   private val insertCommand: Command[Contract] =
     sql"INSERT INTO contracts (subject, version, id, schema, isMerged) VALUES ($contractEncoder)".command
 
+  private val updateIsMergedCommand: Command[(String, Int)] =
+    sql"UPDATE contracts SET isMerged = true WHERE subject = $varchar AND version = $int4".command
+  
   private val selectBySubjectAndVersionQuery: Query[(String, Int), Contract] =
     sql"SELECT subject, version, id, schema, isMerged FROM contracts WHERE subject = $varchar AND version = $int4".query(contractDecoder)
 
@@ -64,6 +67,11 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Sessio
         .void
     }
 
+  override def updateIsMerged(subject: String, version: Int): F[Unit] = 
+    sessionR.use { session =>
+      session.prepare(updateIsMergedCommand).flatMap(_.execute((subject, version))).void
+    }
+  
   override def get(subject: String, version: Int): F[Option[Contract]] =
     sessionR.use { session =>
       session.prepare(selectBySubjectAndVersionQuery).flatMap(_.option((subject, version)))

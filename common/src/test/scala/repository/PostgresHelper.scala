@@ -37,6 +37,7 @@ trait PostgresHelper[F[_]]:
         version INTEGER NOT NULL,
         id INTEGER NOT NULL,
         schema TEXT NOT NULL,
+        ismerged BOOLEAN NOT NULL DEFAULT FALSE,
         PRIMARY KEY (subject, version));""".command).void
 
   def initPostgres(sessionR: Resource[IO, Session[IO]]): IO[Unit] =
@@ -47,6 +48,7 @@ trait PostgresHelper[F[_]]:
             version INTEGER NOT NULL,
             id INTEGER NOT NULL,
             schema TEXT NOT NULL,
+            ismerged BOOLEAN NOT NULL DEFAULT FALSE,
             PRIMARY KEY (subject, version));""".command).void
     }
 
