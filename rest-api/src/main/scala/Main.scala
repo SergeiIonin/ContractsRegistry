@@ -1,16 +1,21 @@
 package io.github.sergeiionin.contractsregistrator
 
-import cats.effect.{ExitCode, IO, IOApp}
-import org.http4s.ember.client.EmberClientBuilder
-import http.client.ContractsRegistryHttpClient
-import serverendpoints.{ContractsServerEndpoints, WebhooksServerEndpoints}
-import serverendpoints.SwaggerServerEndpoints
-import sttp.tapir.server.http4s.Http4sServerInterpreter
-import org.http4s.ember.server.EmberServerBuilder
-import com.comcast.ip4s.{Host, Port, port}
 import config.RestApiApplicationConfig
+import http.client.ContractsRegistryHttpClient
+import producer.GitHubEventsProducer
+import producer.events.prs.{PrClosed, PrClosedKey}
+import serverendpoints.{ContractsServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
+
+import cats.effect.{ExitCode, IO, IOApp}
+import com.comcast.ip4s.{Host, Port, port}
+import fs2.kafka.{KafkaProducer, ProducerSettings, Serializer}
+import org.http4s.ember.client.EmberClientBuilder
+import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
+import sttp.tapir.server.http4s.Http4sServerInterpreter
+import io.circe.syntax.* 
+import producer.events.prs.given
 
 object Main extends IOApp:
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -20,11 +25,24 @@ object Main extends IOApp:
   val port = config.restApi.port
   val baseClientUri = s"${config.schemaRegistry.host}:${config.schemaRegistry.port}"
   
+  val producerTopic = config.kafkaProducer.prsTopic
+  
+  given Serializer[IO, PrClosedKey] = Serializer.lift(key => IO.pure(key.asJson.noSpaces.getBytes))
+  given Serializer[IO, PrClosed] = Serializer.lift(event => IO.pure(event.asJson.noSpaces.getBytes))
+
+  val producerSettings: ProducerSettings[IO, PrClosedKey, PrClosed] =
+    ProducerSettings[IO, PrClosedKey, PrClosed](
+      Serializer.apply[IO, PrClosedKey],
+      Serializer.apply[IO, PrClosed],
+    )
+  
   def run(args: List[String]): IO[ExitCode] =
     (for
       contractsClient           <- ContractsRegistryHttpClient.make[IO]()
+      kafkaProducer             <- KafkaProducer[IO].resource[PrClosedKey, PrClosed](producerSettings)
+      producer                  <- GitHubEventsProducer.makePRsProducer(producerTopic, kafkaProducer)
       contractsServerEndpoints  = ContractsServerEndpoints[IO](baseClientUri, contractsClient)
-      webhooksServerEndpoints   = WebhooksServerEndpoints[IO]()
+      webhooksServerEndpoints   = WebhooksPrsServerEndpoints[IO](producer)
       serverEndpoints           = contractsServerEndpoints.serverEndpoints ++ webhooksServerEndpoints.serverEndpoints
       swaggerServerEndpoints    = SwaggerServerEndpoints(contractsServerEndpoints.getEndpoints ++
                                           webhooksServerEndpoints.getEndpoints)
