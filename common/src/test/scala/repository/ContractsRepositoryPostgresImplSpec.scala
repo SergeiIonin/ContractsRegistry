@@ -33,10 +33,7 @@ class ContractsRepositoryPostgresImplSpec extends Specification with CatsEffect 
   val testSchema2: String = "testSchema_2"
   val testContractV1: Contract = Contract(testSubject, testVersion1, testId1, testSchema1)
   val testContractV2: Contract = Contract(testSubject, testVersion2, testId2, testSchema2)
-
-  def delete(repo: ContractsRepository[IO], subject: String, version: Int): IO[Unit] =
-      repo.delete(subject, version).void
-
+  
   "ContractsRepositoryPostgresImpl" should {
     "perform CRUD operations correctly" in {
       (for
@@ -56,9 +53,12 @@ class ContractsRepositoryPostgresImplSpec extends Specification with CatsEffect 
             versions <- versionsS.compile.toList
             _ = versions must beEqualTo(List(1, 2))
             _ <- repository.delete(testSubject, 2)
-            resOpt1 <- repository.get(testSubject, 2)
-            _ = resOpt1 must beNone
+            resOpt2 <- repository.get(testSubject, 2)
+            _ = resOpt2 must beNone
             _ <- repository.save(testContractV2)
+            _ <- repository.updateIsMerged(testContractV2.subject, testContractV2.version)
+            resOpt2 <- repository.get(testSubject, 2)
+            _ = resOpt2.exists(_.isMerged) must beTrue
             versionsS <- repository.getAllVersionsForSubject(testSubject)
             versions <- versionsS.compile.toList
             _ = versions must beEqualTo(List(1, 2))

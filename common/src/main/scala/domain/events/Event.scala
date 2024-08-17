@@ -1,4 +1,5 @@
 package io.github.sergeiionin.contractsregistrator
-package producer.events
+package domain
+package events
 
-trait Key
+trait Event

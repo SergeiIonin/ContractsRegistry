@@ -49,6 +49,9 @@ class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepo
       _ <- repository.save(contract)
       _ <- addContractPR(contract)
     yield ()
+
+  def updateIsMergedStatus(subject: String, version: Int): F[Unit] =
+    repository.updateIsMerged(subject, version)
   
   def deleteContractVersion(subject: String, version: Int): F[Unit] =
     for

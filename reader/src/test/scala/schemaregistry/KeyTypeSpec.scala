@@ -17,21 +17,21 @@ class KeyTypeSpec extends AnyWordSpec with Matchers:
       val schema = SCHEMA
       val deleteSubject = DELETE_SUBJECT
       val noop = NOOP
-      val unknown = UNKNOWN
+      val other = OTHER
 
       val schemaJson = schema.asJson
       val deleteSubjectJson = deleteSubject.asJson
       val noopJson = noop.asJson
-      val unknownJson = unknown.asJson
+      val otherJson = other.asJson
 
       val schemaDecoded = schemaJson.as[KeyType]
       val deleteSubjectDecoded = deleteSubjectJson.as[KeyType]
       val noopDecoded = noopJson.as[KeyType]
-      val unknownDecoded = unknownJson.as[KeyType]
+      val otherDecoded = otherJson.as[KeyType]
 
       schemaDecoded shouldEqual Right(schema)
       deleteSubjectDecoded shouldEqual Right(deleteSubject)
       noopDecoded shouldEqual Right(noop)
-      unknownDecoded shouldEqual Right(unknown)
+      otherDecoded shouldEqual Right(other)
     }
   }

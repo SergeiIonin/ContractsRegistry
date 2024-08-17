@@ -15,8 +15,8 @@ trait SchemasConsumer[F[_]]:
   def stream(): fs2.Stream[F, CommittableConsumerRecord[F, Bytes, Bytes]]
   def getRecordKeyType(keyRaw: String): KeyType =
     parser.parse(keyRaw).flatMap(json => {
-      json.hcursor.downField("keytype").as[String]
-    }).map(KeyType.fromString).getOrElse(KeyType.UNKNOWN)
+      json.hcursor.downField("keytype").as[String] // fixme "keytype" should be constant
+    }).map(KeyType.fromString).getOrElse(KeyType.OTHER)
     
 object SchemasConsumer
   def make[F[_] : Async](kafkaConsumer: KafkaConsumer[F, Bytes, Bytes]): Resource[F, SchemasConsumer[F]] =

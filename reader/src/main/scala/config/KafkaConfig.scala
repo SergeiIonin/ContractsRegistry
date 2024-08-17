@@ -7,6 +7,7 @@ import pureconfig.generic.derivation.default.*
 
 final case class KafkaConfig(
                            schemasTopic: String,
+                           prsTopic: String,
                            consumerProps: ConsumerProps
                          ) derives ConfigReader
 

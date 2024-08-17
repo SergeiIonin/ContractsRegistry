@@ -49,7 +49,7 @@ class SchemasKafkaConsumerSpec extends AnyWordSpec with Matchers:
           |}
           |""".stripMargin
 
-      val rawKeyUnknown: String =
+      val rawKeyOther: String =
         """
           |{
           |    "keytype":"Entered_The_Wrong_Door",
@@ -60,11 +60,11 @@ class SchemasKafkaConsumerSpec extends AnyWordSpec with Matchers:
       val schemaKey = schemasConsumer.getRecordKeyType(rawKeySchema)
       val deleteSubjectKey = schemasConsumer.getRecordKeyType(rawKeyDeleteSubject)
       val noopKey = schemasConsumer.getRecordKeyType(rawKeyNOOP)
-      val unknownKey = schemasConsumer.getRecordKeyType(rawKeyUnknown)
+      val otherKey = schemasConsumer.getRecordKeyType(rawKeyOther)
 
       schemaKey shouldEqual SCHEMA
       deleteSubjectKey shouldEqual DELETE_SUBJECT
       noopKey shouldEqual NOOP
-      unknownKey shouldEqual UNKNOWN
+      otherKey shouldEqual OTHER
     }
   }

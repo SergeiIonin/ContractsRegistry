@@ -5,7 +5,7 @@ import cats.effect.Async
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import fs2.kafka.{KafkaProducer, ProducerRecord}
-import producer.events.prs.{PrClosedKey, PrClosed}
+import domain.events.prs.{PrClosedKey, PrClosed}
 
 final class GitHubPRsKafkaProducer[F[_] : Async](
                                                   override val topic: String,
