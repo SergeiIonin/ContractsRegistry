@@ -9,6 +9,7 @@ final case class Contract(
                          version: Int,
                          id: Int,
                          schema: String,
+                         isMerged: Boolean = false,
                          deleted: Option[Boolean] = None
 ) derives Encoder, Decoder
 

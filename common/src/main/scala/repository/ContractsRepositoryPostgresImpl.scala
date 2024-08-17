@@ -25,27 +25,27 @@ import org.typelevel.log4cats.Logger
 
 class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Session[F]])(using Logger[F]) extends ContractsRepository[F]:
   private val contractEncoder: skunk.Encoder[Contract] =
-    (varchar ~ int4 ~ int4 ~ text).contramap {
-      case Contract(subject, version, id, schema, _) =>
-        subject ~ version ~ id ~ schema
+    (varchar ~ int4 ~ int4 ~ text ~ bool).contramap {
+      case Contract(subject, version, id, schema, isMerged, _) =>
+        subject ~ version ~ id ~ schema ~ isMerged
     }
 
   private val contractDecoder: skunk.Decoder[Contract] =
-    (varchar ~ int4 ~ int4 ~ text).map {
-      case subject ~ version ~ id ~ schema =>
-        Contract(subject, version, id, schema)
+    (varchar ~ int4 ~ int4 ~ text ~ bool).map {
+      case subject ~ version ~ id ~ schema ~ isMerged =>
+        Contract(subject, version, id, schema, isMerged)
     }
 
   private val subjectAndVersionDecoder: skunk.Decoder[Int] = int4
 
   private val insertCommand: Command[Contract] =
-    sql"INSERT INTO contracts (subject, version, id, schema) VALUES ($contractEncoder)".command
+    sql"INSERT INTO contracts (subject, version, id, schema, isMerged) VALUES ($contractEncoder)".command
 
   private val selectBySubjectAndVersionQuery: Query[(String, Int), Contract] =
-    sql"SELECT subject, version, id, schema FROM contracts WHERE subject = $varchar AND version = $int4".query(contractDecoder)
+    sql"SELECT subject, version, id, schema, isMerged FROM contracts WHERE subject = $varchar AND version = $int4".query(contractDecoder)
 
   private val selectAllQuery: Query[Void, Contract] =
-    sql"SELECT subject, version, id, schema FROM contracts".query(contractDecoder)
+    sql"SELECT subject, version, id, schema, isMerged FROM contracts".query(contractDecoder)
 
   private val selectAllVersionsForSubjectQuery: Query[String, Int] =
     sql"SELECT version FROM contracts WHERE subject = $varchar".query(subjectAndVersionDecoder)
