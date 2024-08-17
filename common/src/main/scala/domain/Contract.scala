@@ -1,7 +1,7 @@
 package io.github.sergeiionin.contractsregistrator
 package domain
 
-import io.circe.{Encoder, Decoder, Json}
+import io.circe.{Encoder, Decoder}
 
 
 final case class Contract(
@@ -10,14 +10,6 @@ final case class Contract(
                          id: Int,
                          schema: String,
                          deleted: Option[Boolean] = None
-)
+) derives Encoder, Decoder
 
-object Contract:
-  given encoder: Encoder[Contract] = Encoder.derived[Contract]
-  given decoder: Decoder[Contract] = Decoder.derived[Contract]
-
-final case class SubjectAndVersion(subject: String, version: Int)
-
-object SubjectAndVersion:
-  given encoder: Encoder[SubjectAndVersion] = Encoder.derived[SubjectAndVersion]
-  given decoder: Decoder[SubjectAndVersion] = Decoder.derived[SubjectAndVersion]
+final case class SubjectAndVersion(subject: String, version: Int) derives Encoder, Decoder
