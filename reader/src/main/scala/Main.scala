@@ -19,8 +19,8 @@ import org.http4s.ember.client.EmberClientBuilder
 import skunk.Session
 import natchez.Trace.Implicits.noop
 import config.ApplicationConfig
+import schemaregistry.KeyType
 import schemaregistry.KeyType.*
-
 import schemaregistry.schemasconsumer.SchemasKafkaConsumerImpl
 
 object Main extends IOApp:
@@ -31,7 +31,7 @@ object Main extends IOApp:
     val kafka = config.kafka
     val postgres = config.postgres
     
-    val topics = List(kafka.schemasTopic)
+    val topics = List(kafka.schemasTopic, kafka.prsTopic)
     val consumerProps = kafka.consumerProps.toMap()
     
     given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -60,6 +60,39 @@ object Main extends IOApp:
         )
         .withProperties(consumerProps)
     
+    def processSchemaRegistryRecord(keyType: KeyType,
+                                    recordOpt: Option[String],
+                                    handler: ContractsHandler[IO]): IO[Unit] =
+      logger.info(s"Received record: ${recordOpt.getOrElse("N/A")}") >> {
+        keyType match
+          case SCHEMA =>
+            val contract = toContract(recordOpt)
+            contract match
+              case Left(e) =>
+                logger.error(s"Failed to parse contract: ${e.getMessage}")
+              case Right(c) if c.deleted.contains(true) =>
+                logger.info(s"Deleting contract's version: ${c.subject}:${c.version}") >>
+                  handler.deleteContractVersion(c.subject, c.version)
+              case Right(c) =>
+                logger.info(s"Registering new contract: ${c.subject}:${c.version}") >>
+                  handler.addContract(c)
+          case DELETE_SUBJECT =>
+            val subjectAndVersion = toSubjectAndVersion(recordOpt)
+            subjectAndVersion.fold[IO[Unit]](
+              e => logger.error(s"Failed to parse delete record: ${e.getMessage}"),
+              sv => logger.info(s"Deleting contract: ${sv.subject}:${sv.version}") >> // fixme rm ${sv.version}
+                handler.deleteContract(sv.subject)
+            )
+          case NOOP =>
+            logger.info("NOOP record")
+          case OTHER =>
+            logger.error("Other record type (not a _schema topic record)")
+      }
+    
+    def processEventRecord(key: String,
+                           recordOpt: Option[String],
+                           handler: ContractsHandler[IO]): IO[Unit] = IO.unit
+    
     (for
       session         <- Session.pooled[IO](host = postgres.host, port = postgres.port, user = postgres.user,
                             database = postgres.database, password = postgres.password.some, max = 10)
@@ -77,33 +110,14 @@ object Main extends IOApp:
           logger.info(s"Subscribed to topics ${topics.mkString(", ")}") >>
           sc.stream()
             .evalMap(cr =>
-              val keyType = sc.getRecordKeyType(Bytes.toString(cr.record.key))
+              val key = Bytes.toString(cr.record.key)
+              val keyType = sc.getRecordKeyType(key)
               val recordOpt = Option(cr.record.value).map(bytes => Bytes.toString(bytes))
-              logger.info(s"Received record: ${recordOpt.getOrElse("N/A")}") >> {
-                keyType match
-                  case SCHEMA =>
-                    val contract = toContract(recordOpt)
-                    contract match
-                      case Left(e) => 
-                        logger.error(s"Failed to parse contract: ${e.getMessage}")
-                      case Right(c) if c.deleted.contains(true) =>
-                        logger.info(s"Deleting contract's version: ${c.subject}:${c.version}") >>
-                          h.deleteContractVersion(c.subject, c.version)
-                      case Right(c) =>
-                        logger.info(s"Registering new contract: ${c.subject}:${c.version}") >>
-                          h.addContract(c)
-                  case DELETE_SUBJECT =>
-                    val subjectAndVersion = toSubjectAndVersion(recordOpt)
-                    subjectAndVersion.fold[IO[Unit]](
-                      e => logger.error(s"Failed to parse delete record: ${e.getMessage}"),
-                      sv => logger.info(s"Deleting contract: ${sv.subject}:${sv.version}") >> // fixme rm ${sv.version}
-                        h.deleteContract(sv.subject)
-                    )
-                  case NOOP =>
-                    logger.info("NOOP record")
-                  case UNKNOWN =>
-                    logger.error("Unknown record type")  
-              }
+              keyType match
+                case SCHEMA | DELETE_SUBJECT | NOOP =>
+                  processSchemaRegistryRecord(keyType, recordOpt, h)
+                case OTHER =>
+                  processEventRecord(key, recordOpt, h)
             )
             .compile
             .drain
