@@ -83,6 +83,7 @@ object Dependencies {
     Seq(
       "org.scalatest" %% "scalatest"                     % Versions.scalatest % Test,
       "org.specs2"    %% "specs2-cats"                   % Versions.`specs2-cats` % Test,
+      "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server" % Versions.tapir % Test
     ) ++
     Seq("testcontainers-scala-core", "testcontainers-scala-kafka",
       "testcontainers-scala-scalatest", "testcontainers-scala-postgresql")
