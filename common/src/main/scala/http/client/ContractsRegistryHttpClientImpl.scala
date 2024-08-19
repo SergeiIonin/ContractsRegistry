@@ -6,7 +6,7 @@ import cats.syntax.applicative.*
 import org.http4s.client.Client
 import org.http4s.{EntityEncoder, Response, Uri}
 
-class ContractsRegistryHttpClientImpl[F[_] : Async](client: Client[F]) extends ContractsRegistryHttpClient[F]:
+final class ContractsRegistryHttpClientImpl[F[_] : Async](client: Client[F]) extends ContractsRegistryHttpClient[F]:
   def get(uri: Uri, token: Option[String]): F[Response[F]] =
     client.run(ClientUtils.getRequest(uri, token))
       .use(resp => resp.pure[F])

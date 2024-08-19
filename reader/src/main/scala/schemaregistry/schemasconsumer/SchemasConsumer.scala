@@ -18,6 +18,6 @@ trait SchemasConsumer[F[_]]:
       json.hcursor.downField("keytype").as[String] // fixme "keytype" should be constant
     }).map(KeyType.fromString).getOrElse(KeyType.OTHER)
     
-object SchemasConsumer
+object SchemasConsumer:
   def make[F[_] : Async](kafkaConsumer: KafkaConsumer[F, Bytes, Bytes]): Resource[F, SchemasConsumer[F]] =
     Resource.pure[F, SchemasConsumer[F]](SchemasKafkaConsumerImpl[F](kafkaConsumer))

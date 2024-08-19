@@ -35,7 +35,7 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
                   .asRight[ContractErrorDTO]
               )
           case response if response.status.code >= 400 && response.status.code < 500 =>
-            BadRequestDTO(createContract.name, "FIXME")
+            BadRequestDTO(createContract.name, "FIXME") // fixme
               .asLeft[CreateContractResponseDTO]
               .pure[F]
       }
@@ -89,21 +89,13 @@ object ContractsServerEndpoints:
   given createContractDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, ContractDTO] = jsonOf[F, ContractDTO]
 
   given createContractResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, CreateContractResponseDTO] = jsonEncoderOf[F, CreateContractResponseDTO]
-  //given createContractResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, CreateContractResponseDTO] = jsonOf[F, CreateContractResponseDTO]
 
-  //given createSchemaResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, CreateSchemaResponseDTO] = jsonEncoderOf[F, CreateSchemaResponseDTO]
   given createSchemaResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, CreateSchemaResponseDTO] = jsonOf[F, CreateSchemaResponseDTO]
 
-  //given deleteSchemaVersionDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, DeleteSchemaVersionResponseDTO] = jsonEncoderOf[F, DeleteSchemaVersionResponseDTO]
-  //given deleteSchemaVersionDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, DeleteSchemaVersionResponseDTO] = jsonOf[F, DeleteSchemaVersionResponseDTO]
   given deleteSchemaVersionDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, Int] = jsonOf[F, Int]
   
-  //given deleteDeleteSchemaResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, DeleteSchemaResponseDTO] = jsonEncoderOf[F, DeleteSchemaResponseDTO]
-  //given deleteDeleteSchemaResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, DeleteSchemaResponseDTO] = jsonOf[F, DeleteSchemaResponseDTO]
   given deleteDeleteSchemaResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, List[Int]] = jsonOf[F, List[Int]]
   
   given deleteContractVersionResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, DeleteContractVersionResponseDTO] = jsonEncoderOf[F, DeleteContractVersionResponseDTO]
-  //given deleteContractVersionResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, DeleteContractVersionResponseDTO] = jsonOf[F, DeleteContractVersionResponseDTO]
 
   given deleteContractResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, DeleteContractResponseDTO] = jsonEncoderOf[F, DeleteContractResponseDTO]
-  //given deleteContractResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, DeleteContractResponseDTO] = jsonOf[F, DeleteContractResponseDTO]

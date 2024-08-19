@@ -23,6 +23,8 @@ trait WebhooksEndpoints:
     base.post
       .in(jsonBody[PrWebhookRequestDTO])
       .out(jsonBody[PrWebhookResponseDTO])
+      .name("PullRequest")
+      .description("Intercept pull request event from GitHub webhooks")
   
   def getEndpoints: List[AnyEndpoint] = 
     List(pullRequest)

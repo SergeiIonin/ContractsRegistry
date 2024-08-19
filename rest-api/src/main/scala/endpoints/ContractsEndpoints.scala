@@ -24,29 +24,39 @@ trait ContractsEndpoints:
     base.post
       .in(jsonBody[CreateContractDTO])
       .out(jsonBody[CreateContractResponseDTO])
+      .name("CreateContract")
+      .description("Create new contract")
   
   val deleteContractVersion =
     base.delete
       .in(path[String]("name"))
       .in("versions")
       .in(path[Int]("version"))
-      .out(jsonBody[DeleteContractVersionResponseDTO])  
+      .out(jsonBody[DeleteContractVersionResponseDTO])
+      .name("DeleteContractVersion")
+      .description("Delete a contracts version")
   
   val deleteContract =
     base.delete
       .in(path[String]("contract"))
       .out(jsonBody[DeleteContractResponseDTO])
+      .name("DeleteContract")
+      .description("Delete the contract")
   
   val getContract =
     base.get
       .in(path[String]("name"))
       .in(path[Int]("id").default(1))
       .out(jsonBody[ContractDTO])
+      .name("GetContract")
+      .description("Get a contract by subject and version")
   
   val getContracts =
     base.get
       .in("contracts")
       .out(jsonBody[List[ContractDTO]])
+      .name("GetContracts")
+      .description("Get all contracts")
   
   def getEndpoints: List[AnyEndpoint] = 
     List(createContract, deleteContractVersion, deleteContract, getContract, getContracts)

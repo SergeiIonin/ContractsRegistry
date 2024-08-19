@@ -41,7 +41,7 @@ lazy val restApi = (project in file("rest-api"))
   .settings(
     name := "rest-api",
   )
-  .dependsOn(common)
+  .dependsOn(common % "compile->compile;test->test")
 
 val res = Seq(
   "Confluent"                 at "https://packages.confluent.io/maven/",
