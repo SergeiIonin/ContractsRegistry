@@ -66,6 +66,23 @@ class RestAPISpec extends Specification with CatsEffect:
         _        = response.code must beEqualTo(Ok)
       yield true
     }
+    
+    "return 400 when a contract payload is incorrect" in {
+      val wrongJson = 
+        "{\"title\": \"bad_contract\"}"
+
+      def responseIO =
+        basicRequest
+          .post(uri"http://test.com/contracts")
+          .body(wrongJson)
+          .send(backendCreateContractStub)
+
+      for
+        response <- responseIO
+        _ <- IO.println(response)
+        _ = response.code must beEqualTo(BadRequest)
+      yield true
+    }
   }
 
 object RestAPISpec:
