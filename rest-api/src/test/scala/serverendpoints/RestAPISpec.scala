@@ -157,7 +157,7 @@ object RestAPISpec:
   val deleteContractVersionServerEndpoint = nameToServerEndpoint("DeleteContractVersion")
     .asInstanceOf[Full[Unit, Unit, (String, Int), ContractErrorDTO, DeleteContractVersionResponseDTO, Any, IO]]
     
-  val deleteContractSubjectServerEndpoint = nameToServerEndpoint("DeleteContract")
+  val deleteContractSubjectServerEndpoint = nameToServerEndpoint("DeleteContractSubject")
     .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, DeleteContractResponseDTO, Any, IO]]
 
  // todo

@@ -40,7 +40,7 @@ trait ContractsEndpoints:
     base.delete
       .in(path[String]("subject"))
       .out(jsonBody[DeleteContractResponseDTO])
-      .name("DeleteContract") // todo rename to DeleteContractSubject
+      .name("DeleteContractSubject")
       .description("Delete the contract")
   
   val getContract =
@@ -60,3 +60,5 @@ trait ContractsEndpoints:
   
   def getEndpoints: List[AnyEndpoint] = 
     List(createContract, deleteContractVersion, deleteContract, getContract, getContracts)
+
+// todo add endpoint names enum or the like
