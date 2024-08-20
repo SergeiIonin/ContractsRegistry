@@ -8,7 +8,7 @@ import org.http4s.EntityEncoder
 import io.circe.{Decoder, Encoder}
 import org.http4s.circe.jsonEncoderOf
 import domain.Contract
-import dto.ContractDTO
+import dto.schemaregistry.{SchemaDTO, CreateSchemaResponseDTO}
 
 import scala.collection.immutable.::
 // todo use MockSchemaRegistryClient
@@ -20,6 +20,7 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient*/
 final class ContractsRegistryHttpClientTestImpl[F[_] : Monad]() extends ContractsRegistryHttpClient[F]:
   import ContractsRegistryHttpClientTestImpl.given
   import ContractsRegistryHttpClientTestImpl.*
+  import dto.schemaregistry.SchemaRegistryDTO.given
 
   private val storage = TestContractsStorage()
   
@@ -35,8 +36,8 @@ final class ContractsRegistryHttpClientTestImpl[F[_] : Monad]() extends Contract
   def post[T](uri: Uri, entity: T, token: Option[String])(using EntityEncoder[F, T]): F[Response[F]] =
     uri.renderString.split("/").toList match
       case _ :: _ :: _ :: "subjects" :: subject :: "versions" :: Nil =>
-        val resp = storage.add(subject, entity.asInstanceOf[ContractDTO])
-        Response.apply().withEntity(IdResponse(resp)).pure[F]
+        val resp = storage.add(subject, entity.asInstanceOf[SchemaDTO])
+        Response.apply().withEntity(CreateSchemaResponseDTO(resp)).pure[F]
       case _ =>
         Response.apply().withStatus(Status.InternalServerError).pure[F]
 
@@ -60,9 +61,6 @@ object ContractsRegistryHttpClientTestImpl:
   def make[F[_] : Monad](): ContractsRegistryHttpClientTestImpl[F] =
     new ContractsRegistryHttpClientTestImpl[F]()
 
-  final case class IdResponse(id: Int) derives Encoder, Decoder
-
   given intEncoder[F[_]]: EntityEncoder[F, Int] = jsonEncoderOf[F, Int]
   given intsEncoder[F[_]]: EntityEncoder[F, List[Int]] = jsonEncoderOf[F, List[Int]]
-  given idResponseEncoder[F[_]]: EntityEncoder[F, IdResponse] = jsonEncoderOf[F, IdResponse]
-  given contractEncoder[F[_]]: EntityEncoder[F, Contract] = jsonEncoderOf[F, Contract]
+  given contractEncoder[F[_]]: EntityEncoder[F, Contract] = jsonEncoderOf[F, Contract] // fixme should be ContractDTO
