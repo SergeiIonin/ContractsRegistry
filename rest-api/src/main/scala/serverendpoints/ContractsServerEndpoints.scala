@@ -25,55 +25,54 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
     createContract.serverLogic(createContract => {
       val contract = ContractDTO(schema = createContract.schema)
       client
-        .post(Uri.unsafeFromString(s"$baseUri/subjects/${createContract.name}/versions"), contract, None)
+        .post(Uri.unsafeFromString(s"$baseUri/subjects/${createContract.subject}/versions"), contract, None)
         .flatMap {
           case response if response.status.code == 200 =>
             response
               .as[CreateSchemaResponseDTO]
               .map(r =>
-                CreateContractResponseDTO(createContract.name, r.id)
+                CreateContractResponseDTO(createContract.subject, r.id)
                   .asRight[ContractErrorDTO]
               )
           case response if response.status.code >= 400 && response.status.code < 500 =>
-            BadRequestDTO(createContract.name, "FIXME") // fixme
+            BadRequestDTO(createContract.subject, "FIXME") // fixme
               .asLeft[CreateContractResponseDTO]
               .pure[F]
       }
     })
 
   private val deleteContractVersionSE: ServerEndpoint[Any, F] =
-    deleteContractVersion.serverLogic((name, version) => {
-      val uri = s"$baseUri/subjects/$name/versions/$version"
+    deleteContractVersion.serverLogic((subject, version) => {
+      val uri = s"$baseUri/subjects/$subject/versions/$version"
       client
         .delete(Uri.unsafeFromString(uri), None)
         .flatMap {
           case response if response.status.code == 200 =>
-            response
-              .as[Int]
+            response.as[Int]
               .map(version => 
-                DeleteContractVersionResponseDTO(name, version)
+                DeleteContractVersionResponseDTO(subject, version)
                   .asRight[ContractErrorDTO]
               )
           case response if response.status.code >= 400 && response.status.code < 500 =>
-            BadRequestDTO(name, "FIXME")
+            BadRequestDTO(subject, "FIXME")
               .asLeft[DeleteContractVersionResponseDTO]
               .pure[F]
-      }
+        }
     })
   
   private val deleteContractSE: ServerEndpoint[Any, F] =
-    deleteContract.serverLogic(name => {
-      val uri = s"$baseUri/subjects/$name"
+    deleteContract.serverLogic(subject => {
+      val uri = s"$baseUri/subjects/$subject"
       client.delete(Uri.unsafeFromString(uri), None).flatMap {
         case response if response.status.code == 200 =>
           response
             .as[List[Int]]
             .map(versions =>
-              DeleteContractResponseDTO(name, versions)
+              DeleteContractResponseDTO(subject, versions)
                 .asRight[ContractErrorDTO]
             )
         case response if response.status.code >= 400 && response.status.code < 500 =>
-          BadRequestDTO(name, "FIXME")
+          BadRequestDTO(subject, "FIXME")
             .asLeft[DeleteContractResponseDTO]
             .pure[F]
       }
@@ -85,8 +84,8 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
   val serverEndpoints = getServerEndpoints
 
 object ContractsServerEndpoints:
-  given createContractDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, ContractDTO] = jsonEncoderOf[F, ContractDTO]
-  given createContractDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, ContractDTO] = jsonOf[F, ContractDTO]
+  given contractDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, ContractDTO] = jsonEncoderOf[F, ContractDTO]
+  given contractDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, ContractDTO] = jsonOf[F, ContractDTO]
 
   given createContractResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, CreateContractResponseDTO] = jsonEncoderOf[F, CreateContractResponseDTO]
 
