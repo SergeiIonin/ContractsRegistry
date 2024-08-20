@@ -29,7 +29,7 @@ trait ContractsEndpoints:
   
   val deleteContractVersion =
     base.delete
-      .in(path[String]("name"))
+      .in(path[String]("subject"))
       .in("versions")
       .in(path[Int]("version"))
       .out(jsonBody[DeleteContractVersionResponseDTO])
@@ -38,9 +38,9 @@ trait ContractsEndpoints:
   
   val deleteContract =
     base.delete
-      .in(path[String]("contract"))
+      .in(path[String]("subject"))
       .out(jsonBody[DeleteContractResponseDTO])
-      .name("DeleteContract")
+      .name("DeleteContract") // todo rename to DeleteContractSubject
       .description("Delete the contract")
   
   val getContract =
