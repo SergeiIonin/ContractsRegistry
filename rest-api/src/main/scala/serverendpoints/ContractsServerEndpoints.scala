@@ -84,8 +84,8 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
   val serverEndpoints = getServerEndpoints
 
 object ContractsServerEndpoints:
-  given createContractDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, ContractDTO] = jsonEncoderOf[F, ContractDTO] // fixme rename to contractDtoEncoder
-  given createContractDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, ContractDTO] = jsonOf[F, ContractDTO] // fixme rename to contractDtoDecoder
+  given contractDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, ContractDTO] = jsonEncoderOf[F, ContractDTO]
+  given contractDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, ContractDTO] = jsonOf[F, ContractDTO]
 
   given createContractResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, CreateContractResponseDTO] = jsonEncoderOf[F, CreateContractResponseDTO]
 
