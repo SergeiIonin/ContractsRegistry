@@ -15,17 +15,18 @@ import repository.ContractsRepository
 import sttp.tapir.server.ServerEndpoint.Full
 import org.http4s.circe.{jsonEncoderOf, jsonOf}
 import org.http4s.Uri
-import dto.schemaregistry.DTO.*
+import dto.schemaregistry.*
 
 class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, client: ContractsRegistryHttpClient[F]) extends ContractsEndpoints:
   import ContractsServerEndpoints.given
-  
+  import dto.schemaregistry.SchemaRegistryDTO.given
+
   // fixme add BadRequestDTO message
   private val createContractSE: ServerEndpoint[Any, F] =
     createContract.serverLogic(createContract => {
-      val contract = ContractDTO(schema = createContract.schema)
+      val schema = SchemaDTO(schema = createContract.schema)
       client
-        .post(Uri.unsafeFromString(s"$baseUri/subjects/${createContract.subject}/versions"), contract, None)
+        .post(Uri.unsafeFromString(s"$baseUri/subjects/${createContract.subject}/versions"), schema, None)
         .flatMap {
           case response if response.status.code == 200 =>
             response
@@ -84,10 +85,10 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
   val serverEndpoints = getServerEndpoints
 
 object ContractsServerEndpoints:
-  given contractDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, ContractDTO] = jsonEncoderOf[F, ContractDTO]
+  given contractDtoEncoder[F[_]]: EntityEncoder[F, ContractDTO] = jsonEncoderOf[F, ContractDTO]
   given contractDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, ContractDTO] = jsonOf[F, ContractDTO]
 
-  given createContractResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, CreateContractResponseDTO] = jsonEncoderOf[F, CreateContractResponseDTO]
+  given createContractResponseDtoEncoder[F[_]]: EntityEncoder[F, CreateContractResponseDTO] = jsonEncoderOf[F, CreateContractResponseDTO]
 
   given createSchemaResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, CreateSchemaResponseDTO] = jsonOf[F, CreateSchemaResponseDTO]
 
@@ -95,6 +96,6 @@ object ContractsServerEndpoints:
   
   given deleteDeleteSchemaResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, List[Int]] = jsonOf[F, List[Int]]
   
-  given deleteContractVersionResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, DeleteContractVersionResponseDTO] = jsonEncoderOf[F, DeleteContractVersionResponseDTO]
+  given deleteContractVersionResponseDtoEncoder[F[_]]: EntityEncoder[F, DeleteContractVersionResponseDTO] = jsonEncoderOf[F, DeleteContractVersionResponseDTO]
 
-  given deleteContractResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, DeleteContractResponseDTO] = jsonEncoderOf[F, DeleteContractResponseDTO]
+  given deleteContractResponseDtoEncoder[F[_]]: EntityEncoder[F, DeleteContractResponseDTO] = jsonEncoderOf[F, DeleteContractResponseDTO]
