@@ -22,7 +22,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import config.RestApiApplicationConfig
 import http.client.ContractsRegistryHttpClientTestImpl
-import dto.{ContractErrorDTO, CreateContractDTO, CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
+import dto.{ContractErrorDTO, ContractDTO, CreateContractDTO, CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
 import endpoints.ContractEndpoint
 import org.http4s.Uri
 import org.scalatest.Ignore
@@ -91,6 +91,34 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
       yield true
     }
   }
+  
+  "getContractVersion" should {
+    val backendGetContractVersionStub =
+      TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
+        .whenServerEndpoint(getContractVersionServerEndpoint)
+        .thenRunLogic()
+        .backend()
+
+    val subject = "foo"
+
+    "return 200 when a contract version was retrieved" in {
+      def getResponseIO(version: Int) =
+          basicRequest
+            .get(uri"http://test.com/$contracts/$subject/$versions/$version")
+            .send(backendGetContractVersionStub)
+
+      for
+        _ <- addContracts(subject)
+        response_1 <- getResponseIO(1)
+        _ <- IO.println(response_1)
+        response_2 <- getResponseIO(2)
+        _ <- IO.println(response_2)
+        _ <- deleteContractsForSubject(subject)
+        _ = response_1.code must beEqualTo(Ok)
+        _ = response_2.code must beEqualTo(Ok)
+      yield true
+    }
+  } 
 
   "deleteContractVersion" should {
     val backendDeleteContractVersionStub =
@@ -163,10 +191,9 @@ object RestAPISpec:
   val deleteContractSubjectServerEndpoint = nameToServerEndpoint(ContractEndpoint.DeleteContractSubject.toString)
     .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, DeleteContractResponseDTO, Any, IO]]
 
- // todo
-  /*val getContractServerEndpoint = nameToServerEndpoint("GetContract")
+  val getContractVersionServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetContractVersion.toString)
     .asInstanceOf[Full[Unit, Unit, (String, Int), ContractErrorDTO, ContractDTO, Any, IO]]
+
+  // todo
+  // implement other get endpoints
   
-  val getContractsServerEndpoint = nameToServerEndpoint("GetContracts")
-    .asInstanceOf[Full[Unit, Unit, Unit, ContractErrorDTO, List[ContractDTO], Any, IO]]
-*/
