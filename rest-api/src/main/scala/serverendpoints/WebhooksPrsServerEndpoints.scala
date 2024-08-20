@@ -4,7 +4,6 @@ package serverendpoints
 import domain.ContractPullRequest
 import dto.*
 import dto.github.webhooks.{PrErrorDTO, PrWebhookResponseDTO, BadRequestErrorDTO as PrBadRequestErrorDTO}
-import dto.schemaregistry.DTO.*
 import endpoints.WebhooksEndpoints
 import http.client.ContractsRegistryHttpClient
 import producer.GitHubEventsProducer
