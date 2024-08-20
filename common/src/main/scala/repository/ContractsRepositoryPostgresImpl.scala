@@ -19,36 +19,37 @@ import skunk.codec.all.*
 import io.circe.syntax.given
 import skunk.circe.codec.json.jsonb
 import domain.Contract.given
+import domain.SchemaType
 
 import cats.effect.kernel.Async
 import org.typelevel.log4cats.Logger
 
 class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Session[F]])(using Logger[F]) extends ContractsRepository[F]:
   private val contractEncoder: skunk.Encoder[Contract] =
-    (varchar ~ int4 ~ int4 ~ text ~ bool).contramap {
-      case Contract(subject, version, id, schema, isMerged, _) =>
-        subject ~ version ~ id ~ schema ~ isMerged
+    (varchar ~ int4 ~ int4 ~ text ~ text ~ bool).contramap {
+      case Contract(subject, version, id, schema, schemaType, isMerged, _) =>
+        subject ~ version ~ id ~ schema ~ schemaType.toString ~ isMerged
     }
 
   private val contractDecoder: skunk.Decoder[Contract] =
-    (varchar ~ int4 ~ int4 ~ text ~ bool).map {
-      case subject ~ version ~ id ~ schema ~ isMerged =>
-        Contract(subject, version, id, schema, isMerged)
+    (varchar ~ int4 ~ int4 ~ text ~ text ~ bool).map {
+      case subject ~ version ~ id ~ schema ~ schemaType ~ isMerged =>
+        Contract(subject, version, id, schema, SchemaType.fromString(schemaType), isMerged)
     }
 
   private val subjectAndVersionDecoder: skunk.Decoder[Int] = int4
 
   private val insertCommand: Command[Contract] =
-    sql"INSERT INTO contracts (subject, version, id, schema, isMerged) VALUES ($contractEncoder)".command
+    sql"INSERT INTO contracts (subject, version, id, schema, schemaType, isMerged) VALUES ($contractEncoder)".command
 
   private val updateIsMergedCommand: Command[(String, Int)] =
     sql"UPDATE contracts SET isMerged = true WHERE subject = $varchar AND version = $int4".command
   
   private val selectBySubjectAndVersionQuery: Query[(String, Int), Contract] =
-    sql"SELECT subject, version, id, schema, isMerged FROM contracts WHERE subject = $varchar AND version = $int4".query(contractDecoder)
+    sql"SELECT subject, version, id, schema, schemaType, isMerged FROM contracts WHERE subject = $varchar AND version = $int4".query(contractDecoder)
 
   private val selectAllQuery: Query[Void, Contract] =
-    sql"SELECT subject, version, id, schema, isMerged FROM contracts".query(contractDecoder)
+    sql"SELECT subject, version, id, schema, schemaType, isMerged FROM contracts".query(contractDecoder)
 
   private val selectAllVersionsForSubjectQuery: Query[String, Int] =
     sql"SELECT version FROM contracts WHERE subject = $varchar".query(subjectAndVersionDecoder)

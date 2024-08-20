@@ -19,6 +19,7 @@ import org.typelevel.log4cats.{Logger, LoggerFactory}
 import domain.Contract
 import repository.{ContractsRepository, PostgresHelper}
 import github.{GitHubClient, GitHubClientTestImpl}
+import domain.SchemaType.PROTOBUF
 
 class ContractsHandlerSpec extends Specification with CatsEffect with PostgresHelper[IO]:
   import ContractsHandlerSpec.given
@@ -32,8 +33,8 @@ class ContractsHandlerSpec extends Specification with CatsEffect with PostgresHe
   val testVersion2: Int = testVersion1 + 1
   val testSchema1: String = "testSchema_1"
   val testSchema2: String = "testSchema_2"
-  val testContractV1: Contract = Contract(testSubject, testVersion1, testId1, testSchema1)
-  val testContractV2: Contract = Contract(testSubject, testVersion2, testId2, testSchema2)
+  val testContractV1: Contract = Contract(testSubject, testVersion1, testId1, testSchema1, PROTOBUF)
+  val testContractV2: Contract = Contract(testSubject, testVersion2, testId2, testSchema2, PROTOBUF)
   
   "ContractsHandler" should {
     "add, set isMerged status and delete contracts" in {
