@@ -23,7 +23,7 @@ import org.scalatest.matchers.should.Matchers
 import config.RestApiApplicationConfig
 import http.client.ContractsRegistryHttpClientTestImpl
 import dto.{ContractDTO, ContractErrorDTO, CreateContractDTO, CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
-
+import endpoints.ContractEndpoint
 import org.http4s.Uri
 import org.scalatest.Ignore
 
@@ -151,13 +151,13 @@ object RestAPISpec:
 
   val nameToServerEndpoint = commandsServerEndpoints.serverEndpoints.map(se => se.info.name.get -> se).toMap
 
-  val createContractServerEndpoint = nameToServerEndpoint("CreateContract")
+  val createContractServerEndpoint = nameToServerEndpoint(ContractEndpoint.CreateContract.toString)
     .asInstanceOf[Full[Unit, Unit, CreateContractDTO, ContractErrorDTO, CreateContractResponseDTO, Any, IO]]
   
-  val deleteContractVersionServerEndpoint = nameToServerEndpoint("DeleteContractVersion")
+  val deleteContractVersionServerEndpoint = nameToServerEndpoint(ContractEndpoint.DeleteContractVersion.toString)
     .asInstanceOf[Full[Unit, Unit, (String, Int), ContractErrorDTO, DeleteContractVersionResponseDTO, Any, IO]]
     
-  val deleteContractSubjectServerEndpoint = nameToServerEndpoint("DeleteContractSubject")
+  val deleteContractSubjectServerEndpoint = nameToServerEndpoint(ContractEndpoint.DeleteContractSubject.toString)
     .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, DeleteContractResponseDTO, Any, IO]]
 
  // todo

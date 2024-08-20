@@ -24,7 +24,7 @@ trait ContractsEndpoints:
     base.post
       .in(jsonBody[CreateContractDTO])
       .out(jsonBody[CreateContractResponseDTO])
-      .name("CreateContract")
+      .name(ContractEndpoint.CreateContract.toString)
       .description("Create new contract")
   
   val deleteContractVersion =
@@ -33,14 +33,14 @@ trait ContractsEndpoints:
       .in("versions")
       .in(path[Int]("version"))
       .out(jsonBody[DeleteContractVersionResponseDTO])
-      .name("DeleteContractVersion")
+      .name(ContractEndpoint.DeleteContractVersion.toString)
       .description("Delete a contracts version")
   
   val deleteContract =
     base.delete
       .in(path[String]("subject"))
       .out(jsonBody[DeleteContractResponseDTO])
-      .name("DeleteContractSubject")
+      .name(ContractEndpoint.DeleteContractSubject.toString)
       .description("Delete the contract")
   
   val getContract =
@@ -48,17 +48,15 @@ trait ContractsEndpoints:
       .in(path[String]("name"))
       .in(path[Int]("id").default(1))
       .out(jsonBody[ContractDTO])
-      .name("GetContract")
+      .name(ContractEndpoint.GetContract.toString)
       .description("Get a contract by subject and version")
   
   val getContracts =
     base.get
       .in("contracts")
       .out(jsonBody[List[ContractDTO]])
-      .name("GetContracts")
+      .name(ContractEndpoint.GetContracts.toString)
       .description("Get all contracts")
   
   def getEndpoints: List[AnyEndpoint] = 
     List(createContract, deleteContractVersion, deleteContract, getContract, getContracts)
-
-// todo add endpoint names enum or the like
