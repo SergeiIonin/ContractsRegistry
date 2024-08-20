@@ -8,12 +8,13 @@ import sttp.tapir.Schema
 import sttp.model.StatusCode
 
 trait ContractsEndpoints:
+  import ContractsEndpoints.*
   given createContractSchema: Schema[CreateContractDTO] = Schema.derived[CreateContractDTO]
   given createContractResponseSchema: Schema[CreateContractResponseDTO] = Schema.derived[CreateContractResponseDTO]
   
   private val base =
     endpoint
-    .in("contracts")
+    .in(contracts)
     .errorOut(
         oneOf[ContractErrorDTO](
           oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequestDTO])
@@ -29,34 +30,41 @@ trait ContractsEndpoints:
   
   val deleteContractVersion =
     base.delete
-      .in(path[String]("subject"))
-      .in("versions")
-      .in(path[Int]("version"))
+      .in(`:subject`)
+      .in(versions)
+      .in(`:version`)
       .out(jsonBody[DeleteContractVersionResponseDTO])
       .name(ContractEndpoint.DeleteContractVersion.toString)
       .description("Delete a contracts version")
   
   val deleteContract =
     base.delete
-      .in(path[String]("subject"))
+      .in(`:subject`)
       .out(jsonBody[DeleteContractResponseDTO])
       .name(ContractEndpoint.DeleteContractSubject.toString)
       .description("Delete the contract")
   
   val getContract =
     base.get
-      .in(path[String]("name"))
-      .in(path[Int]("id").default(1))
+      .in(`:subject`)
+      .in(`:version`)
       .out(jsonBody[ContractDTO])
       .name(ContractEndpoint.GetContract.toString)
       .description("Get a contract by subject and version")
   
   val getContracts =
     base.get
-      .in("contracts")
+      .in(subjects)
       .out(jsonBody[List[ContractDTO]])
       .name(ContractEndpoint.GetContracts.toString)
       .description("Get all contracts")
   
   def getEndpoints: List[AnyEndpoint] = 
     List(createContract, deleteContractVersion, deleteContract, getContract, getContracts)
+
+object ContractsEndpoints:
+  val contracts = "contracts"
+  val versions = "versions"
+  val subjects = "subjects"
+  val `:subject` = path[String]("subject")
+  val `:version` = path[Int]("version")

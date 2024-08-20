@@ -31,6 +31,7 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
   import RestAPISpec.*
   import ContractsServerEndpoints.given
   import ContractHelper.given
+  import endpoints.ContractsEndpoints.*
 
   import io.circe.generic.semiauto
   import io.circe.Encoder
@@ -60,7 +61,7 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
     "return 200 when a contract was created" in {
       def responseIO = 
         basicRequest
-        .post(uri"http://test.com/contracts")
+        .post(uri"http://test.com/$contracts")
         .body(createContractDTOJson(subject, schemaV1))
         .send(backendCreateContractStub)
 
@@ -78,7 +79,7 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
 
       def responseIO =
         basicRequest
-          .post(uri"http://test.com/contracts")
+          .post(uri"http://test.com/$contracts")
           .body(wrongJson)
           .send(backendCreateContractStub)
 
@@ -98,11 +99,12 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
         .backend()
 
     val subject = "foo"
+    val version = 1
 
     "return 200 when a contract version was deleted" in {
       def deleteResponseIO =
           basicRequest
-            .delete(uri"http://test.com/contracts/foo/versions/1")
+            .delete(uri"http://test.com/$contracts/$subject/$versions/$version")
             .send(backendDeleteContractVersionStub)
 
       for
@@ -127,7 +129,7 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
     "return 200 when a contract subject was deleted" in {
       def deleteResponseIO =
           basicRequest
-            .delete(uri"http://test.com/contracts/foo/")
+            .delete(uri"http://test.com/$contracts/$subject/")
             .send(backendDeleteContractSubjectStub)
 
       for
