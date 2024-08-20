@@ -3,6 +3,9 @@ package domain
 
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
+import domain.SchemaType
+
+import domain.SchemaType.PROTOBUF
 
 class ContractPullRequestSpec extends AnyWordSpec with Matchers {
 
@@ -24,7 +27,7 @@ class ContractPullRequestSpec extends AnyWordSpec with Matchers {
     }
 
     "create a ContractPullRequest from a Contract in fromContract" in {
-      val contract = Contract("testSubject", 1, 123, "schema", false, None)
+      val contract = Contract("testSubject", 1, 123, "schema", PROTOBUF, false, None)
       val pr = ContractPullRequest.fromContract(contract)
       pr shouldEqual ContractPullRequest("testSubject", 1, isDeleted = false)
     }

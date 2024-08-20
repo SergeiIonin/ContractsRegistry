@@ -37,6 +37,7 @@ trait PostgresHelper[F[_]]:
         version INTEGER NOT NULL,
         id INTEGER NOT NULL,
         schema TEXT NOT NULL,
+        schematype TEXT NOT NULL,
         ismerged BOOLEAN NOT NULL DEFAULT FALSE,
         PRIMARY KEY (subject, version));""".command).void
 
@@ -48,6 +49,7 @@ trait PostgresHelper[F[_]]:
             version INTEGER NOT NULL,
             id INTEGER NOT NULL,
             schema TEXT NOT NULL,
+            schematype TEXT NOT NULL,
             ismerged BOOLEAN NOT NULL DEFAULT FALSE,
             PRIMARY KEY (subject, version));""".command).void
     }
