@@ -22,7 +22,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import config.RestApiApplicationConfig
 import http.client.ContractsRegistryHttpClientTestImpl
-import dto.{ContractDTO, ContractErrorDTO, CreateContractDTO, CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
+import dto.{ContractErrorDTO, CreateContractDTO, CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
 import endpoints.ContractEndpoint
 import org.http4s.Uri
 import org.scalatest.Ignore
@@ -31,6 +31,7 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
   import RestAPISpec.*
   import ContractsServerEndpoints.given
   import ContractHelper.given
+  import dto.schemaregistry.SchemaRegistryDTO.given
   import endpoints.ContractsEndpoints.*
 
   import io.circe.generic.semiauto
@@ -42,8 +43,8 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
 
   def addContracts(subject: String): IO[Unit] =
     for
-      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), contractDTOv1, None)
-      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), contractDTOv2, None)
+      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), schemaDTOv1, None)
+      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), schemaDTOv2, None)
     yield ()
 
   def deleteContractsForSubject(subject: String): IO[Unit] =
