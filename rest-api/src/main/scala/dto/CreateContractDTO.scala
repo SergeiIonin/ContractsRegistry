@@ -3,9 +3,10 @@ package dto
 
 import io.circe.{Decoder, Encoder}
 import domain.SchemaType
+import domain.SchemaType.given
 import sttp.tapir.Schema
 
-final case class ContractDTO(subject: String, version: Int, schemaType: SchemaType = SchemaType.PROTOBUF, schema: String) derives Encoder, Decoder, Schema
+final case class ContractDTO(subject: String, version: Int, schemaType: SchemaType, schema: String) derives Encoder, Decoder, Schema
 final case class CreateContractDTO(schemaType: String = "PROTOBUF",
                                    subject: String,
                                    schema: String) derives Encoder, Decoder, Schema
