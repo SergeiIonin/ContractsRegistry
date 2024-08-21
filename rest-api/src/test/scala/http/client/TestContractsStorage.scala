@@ -37,6 +37,9 @@ final class TestContractsStorage():
     else
       Right(versions)
   
+  def getSubjects: List[String] =
+    idToContract.values.map(_.subject).toList.distinct
+  
   def delete(subject: String, version: Int): Either[String, Int] =
     val id = getContractId(subject, version)
     

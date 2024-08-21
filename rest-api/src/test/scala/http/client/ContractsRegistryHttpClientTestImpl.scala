@@ -34,6 +34,8 @@ final class ContractsRegistryHttpClientTestImpl[F[_] : Monad]() extends Contract
         storage.getVersions(subject) match
           case Left(_) => Response.apply().withStatus(Status.NotFound).pure[F]
           case Right(versions) => Response.apply().withEntity(versions).pure[F]
+      case _ :: _ :: _ :: "subjects" :: Nil =>
+        Response.apply().withEntity(storage.getSubjects).pure[F]
       case _ =>
         Response.apply().withStatus(Status.InternalServerError).pure[F]
 
@@ -67,4 +69,5 @@ object ContractsRegistryHttpClientTestImpl:
 
   given intEncoder[F[_]]: EntityEncoder[F, Int] = jsonEncoderOf[F, Int]
   given intsEncoder[F[_]]: EntityEncoder[F, List[Int]] = jsonEncoderOf[F, List[Int]]
+  given stringsEncoder[F[_]]: EntityEncoder[F, List[String]] = jsonEncoderOf[F, List[String]]
   given contractEncoder[F[_]]: EntityEncoder[F, Contract] = jsonEncoderOf[F, Contract] // fixme should be ContractDTO
