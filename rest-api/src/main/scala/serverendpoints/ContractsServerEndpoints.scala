@@ -87,6 +87,45 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
       }
     })
   
+  private val getLatestContractSE: ServerEndpoint[Any, F] =
+    def getLatestVersion(subject: String): F[Either[ContractErrorDTO, Option[Int]]] =
+      val uriVersions = s"$baseUri/subjects/$subject/versions"
+      client.get(Uri.unsafeFromString(uriVersions), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[List[Int]]
+            .map(_.lastOption.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO(subject, "FIXME")
+            .asLeft[Option[Int]]
+            .pure[F]
+      }
+    
+    def getContract(subject: String, version: Int): F[Either[ContractErrorDTO, ContractDTO]] =
+      val uri = s"$baseUri/subjects/$subject/versions/$version"
+      client.get(Uri.unsafeFromString(uri), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[ContractDTO]
+            .map(_.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO(subject, "FIXME")
+            .asLeft[ContractDTO]
+            .pure[F]
+      }
+    
+    getLatestContract.serverLogic(subject => {
+      for
+        latestVersion <- getLatestVersion(subject)
+        contractDto   <- latestVersion match
+                            case Right(versionOpt) =>
+                              versionOpt match
+                                case Some(version) => getContract(subject, version)
+                                case None => BadRequestDTO(subject, "FIXME").asLeft[ContractDTO].pure[F]
+                            case Left(err) => err.asLeft[ContractDTO].pure[F]
+      yield contractDto
+    })
+  
   private val deleteContractVersionSE: ServerEndpoint[Any, F] =
     deleteContractVersion.serverLogic((subject, version) => {
       val uri = s"$baseUri/subjects/$subject/versions/$version"
@@ -125,7 +164,7 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
     })
   
   private val getServerEndpoints: List[ServerEndpoint[Any, F]] =
-    List(createContractSE, getContractVersionSE, getVersionsSE, getSubjectsSE, deleteContractVersionSE, deleteContractSE)
+    List(createContractSE, getContractVersionSE, getVersionsSE, getSubjectsSE, getLatestContractSE, deleteContractVersionSE, deleteContractSE)
 
   val serverEndpoints = getServerEndpoints
 
