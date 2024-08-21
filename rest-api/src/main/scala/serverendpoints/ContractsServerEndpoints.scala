@@ -72,6 +72,21 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
       }
     })
   
+  private val getSubjectsSE: ServerEndpoint[Any, F] =
+    getSubjects.serverLogic(_ => {
+      val uri = s"$baseUri/subjects"
+      client.get(Uri.unsafeFromString(uri), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[List[String]]
+            .map(_.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO("FIXME", "FIXME")
+            .asLeft[List[String]]
+            .pure[F]
+      }
+    })
+  
   private val deleteContractVersionSE: ServerEndpoint[Any, F] =
     deleteContractVersion.serverLogic((subject, version) => {
       val uri = s"$baseUri/subjects/$subject/versions/$version"
@@ -125,6 +140,8 @@ object ContractsServerEndpoints:
   given versionDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, Int] = jsonOf[F, Int]
   
   given versionsDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, List[Int]] = jsonOf[F, List[Int]]
+  
+  given subjectsDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, List[String]] = jsonOf[F, List[String]]
   
   given deleteContractVersionResponseDtoEncoder[F[_]]: EntityEncoder[F, DeleteContractVersionResponseDTO] = jsonEncoderOf[F, DeleteContractVersionResponseDTO]
 
