@@ -34,7 +34,7 @@ object Main extends IOApp:
     ProducerSettings[IO, PrClosedKey, PrClosed](
       Serializer.apply[IO, PrClosedKey],
       Serializer.apply[IO, PrClosed],
-    )
+    ).withBootstrapServers(config.kafkaProducer.bootstrapServers.head)
   
   def run(args: List[String]): IO[ExitCode] =
     (for
