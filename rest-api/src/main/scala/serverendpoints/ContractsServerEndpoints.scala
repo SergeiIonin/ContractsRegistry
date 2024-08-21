@@ -57,6 +57,21 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
       }
     })
   
+  private val getVersionsSE: ServerEndpoint[Any, F] =
+    getVersions.serverLogic(subject => {
+      val uri = s"$baseUri/subjects/$subject/versions"
+      client.get(Uri.unsafeFromString(uri), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[List[Int]]
+            .map(_.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO(subject, "FIXME")
+            .asLeft[List[Int]]
+            .pure[F]
+      }
+    })
+  
   private val deleteContractVersionSE: ServerEndpoint[Any, F] =
     deleteContractVersion.serverLogic((subject, version) => {
       val uri = s"$baseUri/subjects/$subject/versions/$version"
@@ -95,7 +110,7 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
     })
   
   private val getServerEndpoints: List[ServerEndpoint[Any, F]] =
-    List(createContractSE, getContractVersionSE, deleteContractVersionSE, deleteContractSE)
+    List(createContractSE, getContractVersionSE, getVersionsSE, deleteContractVersionSE, deleteContractSE)
 
   val serverEndpoints = getServerEndpoints
 

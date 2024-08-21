@@ -53,6 +53,14 @@ trait ContractsEndpoints:
       .name(ContractEndpoint.GetContractVersion.toString)
       .description("Get a contract by subject and version")
   
+  val getVersions =
+    base.get
+      .in(`:subject`)
+      .in(versions)
+      .out(jsonBody[List[Int]])
+      .name(ContractEndpoint.GetVersions.toString)
+      .description("Get all versions of a contract")
+  
   val getContracts =
     base.get
       .in(subjects)
@@ -61,7 +69,7 @@ trait ContractsEndpoints:
       .description("Get all contracts")
   
   def getEndpoints: List[AnyEndpoint] = 
-    List(createContract, deleteContractVersion, deleteContract, getContractVersion, getContracts)
+    List(createContract, deleteContractVersion, deleteContract, getContractVersion, getVersions, getContracts)
 
 object ContractsEndpoints:
   val contracts = "contracts"
