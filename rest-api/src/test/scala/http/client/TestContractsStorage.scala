@@ -27,7 +27,16 @@ final class TestContractsStorage():
       Left(s"Contract with subject $subject and version $version not found")
     else
       Right(idToContract(id))
-    
+  
+  def getVersions(subject: String): Either[String, List[Int]] =
+    val versions = idToContract.collect {
+      case (id, contract) if contract.subject == subject => contract.version
+    }.toList
+    if versions.isEmpty then
+      Left(s"Contracts with subject $subject not found")
+    else
+      Right(versions)
+  
   def delete(subject: String, version: Int): Either[String, Int] =
     val id = getContractId(subject, version)
     

@@ -30,6 +30,10 @@ final class ContractsRegistryHttpClientTestImpl[F[_] : Monad]() extends Contract
         storage.get(subject, version.toInt) match
           case Left(_) => Response.apply().withStatus(Status.NotFound).pure[F]
           case Right(contract) => Response.apply().withEntity(contract).pure[F]
+      case _ :: _ :: _ :: "subjects" :: subject :: "versions" :: Nil =>
+        storage.getVersions(subject) match
+          case Left(_) => Response.apply().withStatus(Status.NotFound).pure[F]
+          case Right(versions) => Response.apply().withEntity(versions).pure[F]
       case _ =>
         Response.apply().withStatus(Status.InternalServerError).pure[F]
 
