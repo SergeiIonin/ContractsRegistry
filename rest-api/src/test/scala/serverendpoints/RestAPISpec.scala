@@ -160,6 +160,31 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
       yield true
     }
   }
+  
+  "getSubjects" should {
+    val backendGetSubjectsStub =
+      TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
+        .whenServerEndpoint(getSubjectsServerEndpoint)
+        .thenRunLogic()
+        .backend()
+
+    "return 200 when a contract subjects were retrieved" in {
+      def getResponseIO =
+          basicRequest
+            .get(uri"http://test.com/$contracts/$subjects")
+            .send(backendGetSubjectsStub)
+
+      for
+        _ <- addContracts("foo")
+        _ <- addContracts("bar")
+        response <- getResponseIO
+        _ <- IO.println(response)
+        _ <- deleteContractsForSubject("foo")
+        _ <- deleteContractsForSubject("bar")
+        _ = response.code must beEqualTo(Ok)
+      yield true
+    }
+  }
 
   "deleteContractVersion" should {
     val backendDeleteContractVersionStub =
@@ -238,6 +263,8 @@ object RestAPISpec:
   val getVersionsServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetVersions.toString)
     .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, List[Int], Any, IO]]
 
+  val getSubjectsServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetSubjects.toString)
+    .asInstanceOf[Full[Unit, Unit, Unit, ContractErrorDTO, List[String], Any, IO]]
   // todo
   // implement other get endpoints
   

@@ -125,7 +125,7 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
     })
   
   private val getServerEndpoints: List[ServerEndpoint[Any, F]] =
-    List(createContractSE, getContractVersionSE, getVersionsSE, deleteContractVersionSE, deleteContractSE)
+    List(createContractSE, getContractVersionSE, getVersionsSE, getSubjectsSE, deleteContractVersionSE, deleteContractSE)
 
   val serverEndpoints = getServerEndpoints
 
