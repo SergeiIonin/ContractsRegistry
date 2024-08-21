@@ -22,7 +22,7 @@ import org.scalatest.wordspec.AnyWordSpec
 import org.scalatest.matchers.should.Matchers
 import config.RestApiApplicationConfig
 import http.client.ContractsRegistryHttpClientTestImpl
-import dto.{ContractDTO, ContractErrorDTO, CreateContractDTO, CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
+import dto.{ContractErrorDTO, ContractDTO, CreateContractDTO, CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
 import endpoints.ContractEndpoint
 import org.http4s.Uri
 import org.scalatest.Ignore
@@ -31,6 +31,8 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
   import RestAPISpec.*
   import ContractsServerEndpoints.given
   import ContractHelper.given
+  import dto.schemaregistry.SchemaRegistryDTO.given
+  import endpoints.ContractsEndpoints.*
 
   import io.circe.generic.semiauto
   import io.circe.Encoder
@@ -41,8 +43,8 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
 
   def addContracts(subject: String): IO[Unit] =
     for
-      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), contractDTOv1, None)
-      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), contractDTOv2, None)
+      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), schemaDTOv1, None)
+      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), schemaDTOv2, None)
     yield ()
 
   def deleteContractsForSubject(subject: String): IO[Unit] =
@@ -60,7 +62,7 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
     "return 200 when a contract was created" in {
       def responseIO = 
         basicRequest
-        .post(uri"http://test.com/contracts")
+        .post(uri"http://test.com/$contracts")
         .body(createContractDTOJson(subject, schemaV1))
         .send(backendCreateContractStub)
 
@@ -78,13 +80,147 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
 
       def responseIO =
         basicRequest
-          .post(uri"http://test.com/contracts")
+          .post(uri"http://test.com/$contracts")
           .body(wrongJson)
           .send(backendCreateContractStub)
 
       for
         response <- responseIO
         _ <- IO.println(response)
+        _ = response.code must beEqualTo(BadRequest)
+      yield true
+    }
+  }
+  
+  "getContractVersion" should {
+    val backendGetContractVersionStub =
+      TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
+        .whenServerEndpoint(getContractVersionServerEndpoint)
+        .thenRunLogic()
+        .backend()
+
+    val subject = "foo"
+
+    "return 200 when a contract version was retrieved" in {
+      def getResponseIO(version: Int) =
+          basicRequest
+            .get(uri"http://test.com/$contracts/$subject/$versions/$version")
+            .send(backendGetContractVersionStub)
+
+      for
+        _ <- addContracts(subject)
+        response_1 <- getResponseIO(1)
+        _ <- IO.println(response_1)
+        response_2 <- getResponseIO(2)
+        _ <- IO.println(response_2)
+        _ <- deleteContractsForSubject(subject)
+        _ = response_1.code must beEqualTo(Ok)
+        _ = response_2.code must beEqualTo(Ok)
+      yield true
+    }
+    // todo add 400 case
+  }
+  
+  "getVersions" should {
+    val backendGetVersionsStub =
+      TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
+        .whenServerEndpoint(getVersionsServerEndpoint)
+        .thenRunLogic()
+        .backend()
+
+    val subject = "foo"
+
+    "return 200 when a contract versions were retrieved" in {
+      def getResponseIO(subject: String) =
+          basicRequest
+            .get(uri"http://test.com/$contracts/$subject/$versions")
+            .send(backendGetVersionsStub)
+
+      for
+        _ <- addContracts(subject)
+        response <- getResponseIO(subject)
+        _ <- IO.println(response)
+        _ <- deleteContractsForSubject(subject)
+        _ = response.code must beEqualTo(Ok)
+      yield true
+    }
+    
+    "return 400 when a subject wasn't found" in {
+      def getResponseIO(subject: String) =
+          basicRequest
+            .get(uri"http://test.com/$contracts/$subject/$versions")
+            .send(backendGetVersionsStub)
+
+      for
+        _ <- addContracts("foo")
+        response <- getResponseIO("bar")
+        _ <- IO.println(response)
+        _ <- deleteContractsForSubject("foo")
+        _ = response.code must beEqualTo(BadRequest)
+      yield true
+    }
+  }
+  
+  "getSubjects" should {
+    val backendGetSubjectsStub =
+      TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
+        .whenServerEndpoint(getSubjectsServerEndpoint)
+        .thenRunLogic()
+        .backend()
+
+    "return 200 when a contract subjects were retrieved" in {
+      def getResponseIO =
+          basicRequest
+            .get(uri"http://test.com/$contracts/$subjects")
+            .send(backendGetSubjectsStub)
+
+      for
+        _ <- addContracts("foo")
+        _ <- addContracts("bar")
+        response <- getResponseIO
+        _ <- IO.println(response)
+        _ <- deleteContractsForSubject("foo")
+        _ <- deleteContractsForSubject("bar")
+        _ = response.code must beEqualTo(Ok)
+      yield true
+    }
+  }
+  
+  "getLatestContract" should {
+    val backendGetLatestContractStub =
+      TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
+        .whenServerEndpoint(getLatestContractServerEndpoint)
+        .thenRunLogic()
+        .backend()
+
+    val subject = "foo"
+
+    "return 200 when a latest contract version was retrieved" in {
+      def getResponseIO(subject: String) =
+          basicRequest
+            .get(uri"http://test.com/$contracts/$subject/$latest")
+            .send(backendGetLatestContractStub)
+
+      for
+        _ <- addContracts(subject)
+        response <- getResponseIO(subject)
+        _ <- IO.println(response)
+        _ <- deleteContractsForSubject(subject)
+        _ = response.code must beEqualTo(Ok)
+      yield true
+    }
+    
+    "return 400 when a subject wasn't found" in {
+      def getResponseIO(subject: String) =
+          basicRequest
+            .get(uri"http://test.com/$contracts/$subject/$latest")
+            .send(backendGetLatestContractStub)
+
+      for
+        _ <- addContracts("foo")
+        response <- getResponseIO("bar")
+        _ <- IO.println(response)
+        _ <- deleteContractsForSubject("foo")
         _ = response.code must beEqualTo(BadRequest)
       yield true
     }
@@ -98,11 +234,12 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
         .backend()
 
     val subject = "foo"
+    val version = 1
 
     "return 200 when a contract version was deleted" in {
       def deleteResponseIO =
           basicRequest
-            .delete(uri"http://test.com/contracts/foo/versions/1")
+            .delete(uri"http://test.com/$contracts/$subject/$versions/$version")
             .send(backendDeleteContractVersionStub)
 
       for
@@ -127,7 +264,7 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
     "return 200 when a contract subject was deleted" in {
       def deleteResponseIO =
           basicRequest
-            .delete(uri"http://test.com/contracts/foo/")
+            .delete(uri"http://test.com/$contracts/$subject/")
             .send(backendDeleteContractSubjectStub)
 
       for
@@ -160,10 +297,14 @@ object RestAPISpec:
   val deleteContractSubjectServerEndpoint = nameToServerEndpoint(ContractEndpoint.DeleteContractSubject.toString)
     .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, DeleteContractResponseDTO, Any, IO]]
 
- // todo
-  /*val getContractServerEndpoint = nameToServerEndpoint("GetContract")
+  val getContractVersionServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetContractVersion.toString)
     .asInstanceOf[Full[Unit, Unit, (String, Int), ContractErrorDTO, ContractDTO, Any, IO]]
+
+  val getVersionsServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetVersions.toString)
+    .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, List[Int], Any, IO]]
+
+  val getSubjectsServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetSubjects.toString)
+    .asInstanceOf[Full[Unit, Unit, Unit, ContractErrorDTO, List[String], Any, IO]]
   
-  val getContractsServerEndpoint = nameToServerEndpoint("GetContracts")
-    .asInstanceOf[Full[Unit, Unit, Unit, ContractErrorDTO, List[ContractDTO], Any, IO]]
-*/
+  val getLatestContractServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetLatestContract.toString)
+    .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, ContractDTO, Any, IO]]

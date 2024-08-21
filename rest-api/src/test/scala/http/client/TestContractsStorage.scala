@@ -2,7 +2,7 @@ package io.github.sergeiionin.contractsregistrator
 package http.client
 
 import domain.{Contract, SchemaType}
-import dto.ContractDTO
+import dto.schemaregistry.SchemaDTO
 
 final class TestContractsStorage():
   private val idToContract = collection.mutable.Map.empty[String, Contract]
@@ -14,10 +14,10 @@ final class TestContractsStorage():
   private def getContractId(contract: Contract): String =
     getContractId(contract.subject, contract.version)
   
-  def add(subject: String, contractDTO: ContractDTO): Int =
+  def add(subject: String, schemaDTO: SchemaDTO): Int =
     val versionUpd = subjectToLatestVersion.get(subject).map(_ + 1).getOrElse(1)
     subjectToLatestVersion.update(subject, versionUpd)
-    val contract = Contract(subject, versionUpd, versionUpd, contractDTO.schema, SchemaType.PROTOBUF)
+    val contract = Contract(subject, versionUpd, versionUpd, schemaDTO.schema, SchemaType.PROTOBUF)
     idToContract += (getContractId(contract) -> contract)
     versionUpd
 
@@ -27,7 +27,19 @@ final class TestContractsStorage():
       Left(s"Contract with subject $subject and version $version not found")
     else
       Right(idToContract(id))
-    
+  
+  def getVersions(subject: String): Either[String, List[Int]] =
+    val versions = idToContract.collect {
+      case (id, contract) if contract.subject == subject => contract.version
+    }.toList
+    if versions.isEmpty then
+      Left(s"Contracts with subject $subject not found")
+    else
+      Right(versions)
+  
+  def getSubjects: List[String] =
+    idToContract.values.map(_.subject).toList.distinct
+  
   def delete(subject: String, version: Int): Either[String, Int] =
     val id = getContractId(subject, version)
     

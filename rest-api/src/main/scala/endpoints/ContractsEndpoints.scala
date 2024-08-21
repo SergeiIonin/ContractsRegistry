@@ -8,12 +8,13 @@ import sttp.tapir.Schema
 import sttp.model.StatusCode
 
 trait ContractsEndpoints:
+  import ContractsEndpoints.*
   given createContractSchema: Schema[CreateContractDTO] = Schema.derived[CreateContractDTO]
   given createContractResponseSchema: Schema[CreateContractResponseDTO] = Schema.derived[CreateContractResponseDTO]
   
   private val base =
     endpoint
-    .in("contracts")
+    .in(contracts)
     .errorOut(
         oneOf[ContractErrorDTO](
           oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequestDTO])
@@ -29,34 +30,59 @@ trait ContractsEndpoints:
   
   val deleteContractVersion =
     base.delete
-      .in(path[String]("subject"))
-      .in("versions")
-      .in(path[Int]("version"))
+      .in(`:subject`)
+      .in(versions)
+      .in(`:version`)
       .out(jsonBody[DeleteContractVersionResponseDTO])
       .name(ContractEndpoint.DeleteContractVersion.toString)
       .description("Delete a contracts version")
   
   val deleteContract =
     base.delete
-      .in(path[String]("subject"))
+      .in(`:subject`)
       .out(jsonBody[DeleteContractResponseDTO])
       .name(ContractEndpoint.DeleteContractSubject.toString)
       .description("Delete the contract")
   
-  val getContract =
+  val getContractVersion =
     base.get
-      .in(path[String]("name"))
-      .in(path[Int]("id").default(1))
+      .in(`:subject`)
+      .in(versions)
+      .in(`:version`)
       .out(jsonBody[ContractDTO])
-      .name(ContractEndpoint.GetContract.toString)
+      .name(ContractEndpoint.GetContractVersion.toString)
       .description("Get a contract by subject and version")
-  
-  val getContracts =
+
+  val getVersions =
     base.get
-      .in("contracts")
-      .out(jsonBody[List[ContractDTO]])
-      .name(ContractEndpoint.GetContracts.toString)
-      .description("Get all contracts")
+      .in(`:subject`)
+      .in(versions)
+      .out(jsonBody[List[Int]])
+      .name(ContractEndpoint.GetVersions.toString)
+      .description("Get all versions of a contract")
   
-  def getEndpoints: List[AnyEndpoint] = 
-    List(createContract, deleteContractVersion, deleteContract, getContract, getContracts)
+  val getSubjects =
+    base.get
+      .in(subjects)
+      .out(jsonBody[List[String]])
+      .name(ContractEndpoint.GetSubjects.toString)
+      .description("Get all subjects")
+  
+  val getLatestContract =
+    base.get
+      .in(`:subject`)
+      .in(latest)
+      .out(jsonBody[ContractDTO])
+      .name(ContractEndpoint.GetLatestContract.toString)
+      .description("Get the latest contract version")
+  
+  def getEndpoints: List[AnyEndpoint] =
+    List(createContract, deleteContractVersion, deleteContract, getContractVersion, getVersions, getSubjects, getLatestContract)
+
+object ContractsEndpoints:
+  val contracts = "contracts"
+  val versions = "versions"
+  val subjects = "subjects"
+  val latest = "latest"
+  val `:subject` = path[String]("subject")
+  val `:version` = path[Int]("version")

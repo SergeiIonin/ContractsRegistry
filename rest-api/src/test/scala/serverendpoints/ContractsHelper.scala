@@ -1,8 +1,9 @@
 package io.github.sergeiionin.contractsregistrator
 package serverendpoints
 
-import dto.{ContractDTO, ContractErrorDTO, CreateContractDTO,
+import dto.{ContractErrorDTO, CreateContractDTO,
   CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
+import dto.schemaregistry.SchemaDTO
 import io.circe.Encoder
 import org.http4s.circe.jsonEncoderOf
 import org.http4s.EntityEncoder
@@ -33,8 +34,8 @@ trait ContractsHelper:
   private def createContractDTO(subject: String, schema: String) = CreateContractDTO(subject = subject, schema = schema)
   def createContractDTOJson(subject: String, schema: String) = CreateContractDTOEncoder.apply(createContractDTO(subject, schema)).toString
   
-  val contractDTOv1: ContractDTO = ContractDTO(schema = schemaV1)
-  val contractDTOv2: ContractDTO = ContractDTO(schema = schemaV2)
+  val schemaDTOv1: SchemaDTO = SchemaDTO(schema = schemaV1)
+  val schemaDTOv2: SchemaDTO = SchemaDTO(schema = schemaV2)
 
 object ContractHelper:
   val CreateContractDTOEncoder = summon[Encoder[CreateContractDTO]]

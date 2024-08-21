@@ -15,17 +15,18 @@ import repository.ContractsRepository
 import sttp.tapir.server.ServerEndpoint.Full
 import org.http4s.circe.{jsonEncoderOf, jsonOf}
 import org.http4s.Uri
-import dto.schemaregistry.DTO.*
+import dto.schemaregistry.*
 
 class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, client: ContractsRegistryHttpClient[F]) extends ContractsEndpoints:
   import ContractsServerEndpoints.given
-  
+  import dto.schemaregistry.SchemaRegistryDTO.given
+
   // fixme add BadRequestDTO message
   private val createContractSE: ServerEndpoint[Any, F] =
     createContract.serverLogic(createContract => {
-      val contract = ContractDTO(schema = createContract.schema)
+      val schema = SchemaDTO(schema = createContract.schema)
       client
-        .post(Uri.unsafeFromString(s"$baseUri/subjects/${createContract.subject}/versions"), contract, None)
+        .post(Uri.unsafeFromString(s"$baseUri/subjects/${createContract.subject}/versions"), schema, None)
         .flatMap {
           case response if response.status.code == 200 =>
             response
@@ -40,7 +41,91 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
               .pure[F]
       }
     })
-
+  
+  private val getContractVersionSE: ServerEndpoint[Any, F] =
+    getContractVersion.serverLogic((subject, version) => {
+      val uri = s"$baseUri/subjects/$subject/versions/$version"
+      client.get(Uri.unsafeFromString(uri), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[ContractDTO]
+            .map(_.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO(subject, "FIXME")
+            .asLeft[ContractDTO]
+            .pure[F]
+      }
+    })
+  
+  private val getVersionsSE: ServerEndpoint[Any, F] =
+    getVersions.serverLogic(subject => {
+      val uri = s"$baseUri/subjects/$subject/versions"
+      client.get(Uri.unsafeFromString(uri), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[List[Int]]
+            .map(_.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO(subject, "FIXME")
+            .asLeft[List[Int]]
+            .pure[F]
+      }
+    })
+  
+  private val getSubjectsSE: ServerEndpoint[Any, F] =
+    getSubjects.serverLogic(_ => {
+      val uri = s"$baseUri/subjects"
+      client.get(Uri.unsafeFromString(uri), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[List[String]]
+            .map(_.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO("FIXME", "FIXME")
+            .asLeft[List[String]]
+            .pure[F]
+      }
+    })
+  
+  private val getLatestContractSE: ServerEndpoint[Any, F] =
+    def getLatestVersion(subject: String): F[Either[ContractErrorDTO, Option[Int]]] =
+      val uriVersions = s"$baseUri/subjects/$subject/versions"
+      client.get(Uri.unsafeFromString(uriVersions), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[List[Int]]
+            .map(_.lastOption.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO(subject, "FIXME")
+            .asLeft[Option[Int]]
+            .pure[F]
+      }
+    
+    def getContract(subject: String, version: Int): F[Either[ContractErrorDTO, ContractDTO]] =
+      val uri = s"$baseUri/subjects/$subject/versions/$version"
+      client.get(Uri.unsafeFromString(uri), None).flatMap {
+        case response if response.status.code == 200 =>
+          response
+            .as[ContractDTO]
+            .map(_.asRight[ContractErrorDTO])
+        case response if response.status.code >= 400 && response.status.code < 500 =>
+          BadRequestDTO(subject, "FIXME")
+            .asLeft[ContractDTO]
+            .pure[F]
+      }
+    
+    getLatestContract.serverLogic(subject => {
+      for
+        latestVersion <- getLatestVersion(subject)
+        contractDto   <- latestVersion match
+                            case Right(versionOpt) =>
+                              versionOpt match
+                                case Some(version) => getContract(subject, version)
+                                case None => BadRequestDTO(subject, "FIXME").asLeft[ContractDTO].pure[F]
+                            case Left(err) => err.asLeft[ContractDTO].pure[F]
+      yield contractDto
+    })
+  
   private val deleteContractVersionSE: ServerEndpoint[Any, F] =
     deleteContractVersion.serverLogic((subject, version) => {
       val uri = s"$baseUri/subjects/$subject/versions/$version"
@@ -79,22 +164,24 @@ class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, clien
     })
   
   private val getServerEndpoints: List[ServerEndpoint[Any, F]] =
-    List(createContractSE, deleteContractVersionSE, deleteContractSE)
+    List(createContractSE, getContractVersionSE, getVersionsSE, getSubjectsSE, getLatestContractSE, deleteContractVersionSE, deleteContractSE)
 
   val serverEndpoints = getServerEndpoints
 
 object ContractsServerEndpoints:
-  given contractDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, ContractDTO] = jsonEncoderOf[F, ContractDTO]
+  given contractDtoEncoder[F[_]]: EntityEncoder[F, ContractDTO] = jsonEncoderOf[F, ContractDTO]
   given contractDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, ContractDTO] = jsonOf[F, ContractDTO]
 
-  given createContractResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, CreateContractResponseDTO] = jsonEncoderOf[F, CreateContractResponseDTO]
+  given createContractResponseDtoEncoder[F[_]]: EntityEncoder[F, CreateContractResponseDTO] = jsonEncoderOf[F, CreateContractResponseDTO]
 
   given createSchemaResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, CreateSchemaResponseDTO] = jsonOf[F, CreateSchemaResponseDTO]
 
-  given deleteSchemaVersionDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, Int] = jsonOf[F, Int]
+  given versionDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, Int] = jsonOf[F, Int]
   
-  given deleteDeleteSchemaResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, List[Int]] = jsonOf[F, List[Int]]
+  given versionsDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, List[Int]] = jsonOf[F, List[Int]]
   
-  given deleteContractVersionResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, DeleteContractVersionResponseDTO] = jsonEncoderOf[F, DeleteContractVersionResponseDTO]
+  given subjectsDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, List[String]] = jsonOf[F, List[String]]
+  
+  given deleteContractVersionResponseDtoEncoder[F[_]]: EntityEncoder[F, DeleteContractVersionResponseDTO] = jsonEncoderOf[F, DeleteContractVersionResponseDTO]
 
-  given deleteContractResponseDtoEncoder[F[_] : Concurrent]: EntityEncoder[F, DeleteContractResponseDTO] = jsonEncoderOf[F, DeleteContractResponseDTO]
+  given deleteContractResponseDtoEncoder[F[_]]: EntityEncoder[F, DeleteContractResponseDTO] = jsonEncoderOf[F, DeleteContractResponseDTO]
