@@ -3,7 +3,7 @@ package serverendpoints
 
 import dto.{ContractErrorDTO, CreateContractDTO,
   CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
-import dto.schemaregistry.SchemaDTO
+import dto.schema.SchemaDTO
 import io.circe.Encoder
 import org.http4s.circe.jsonEncoderOf
 import org.http4s.EntityEncoder

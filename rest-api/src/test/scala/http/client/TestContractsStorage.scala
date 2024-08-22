@@ -2,7 +2,7 @@ package io.github.sergeiionin.contractsregistrator
 package http.client
 
 import domain.{Contract, SchemaType}
-import dto.schemaregistry.SchemaDTO
+import dto.schema.SchemaDTO
 
 final class TestContractsStorage():
   private val idToContract = collection.mutable.Map.empty[String, Contract]
