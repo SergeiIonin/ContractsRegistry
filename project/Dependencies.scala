@@ -12,6 +12,7 @@ object Dependencies {
     val testcontainers = "0.41.4"
     val scalatest = "3.2.19"
     val `specs2-cats` = "4.20.8"
+    val `docker-java` = "3.4.0"
   }
 
   lazy val catsDependencies =
@@ -81,9 +82,10 @@ object Dependencies {
 
   lazy val testDependencies =
     Seq(
-      "org.scalatest" %% "scalatest"                     % Versions.scalatest % Test,
-      "org.specs2"    %% "specs2-cats"                   % Versions.`specs2-cats` % Test,
-      "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server" % Versions.tapir % Test
+      "org.scalatest"               %% "scalatest"                     % Versions.scalatest % Test,
+      "org.specs2"                  %% "specs2-cats"                   % Versions.`specs2-cats` % Test,
+      "com.github.docker-java"      % "docker-java"                    % Versions.`docker-java` % Test,
+      "com.softwaremill.sttp.tapir" %% "tapir-sttp-stub-server"        % Versions.tapir % Test
     ) ++
     Seq("testcontainers-scala-core", "testcontainers-scala-kafka",
       "testcontainers-scala-scalatest", "testcontainers-scala-postgresql")
