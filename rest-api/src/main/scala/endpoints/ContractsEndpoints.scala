@@ -2,6 +2,7 @@ package io.github.sergeiionin.contractsregistrator
 package endpoints
 
 import dto.*
+import dto.errors.{HttpErrorDTO, BadRequestDTO, InternalServerErrorDTO}
 import sttp.tapir.*
 import sttp.tapir.json.circe.*
 import sttp.tapir.Schema
@@ -16,7 +17,7 @@ trait ContractsEndpoints:
     endpoint
     .in(contracts)
     .errorOut(
-        oneOf[ContractErrorDTO](
+        oneOf[HttpErrorDTO](
           oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequestDTO])
         )
     )
