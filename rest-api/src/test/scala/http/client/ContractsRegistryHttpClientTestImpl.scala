@@ -8,7 +8,7 @@ import org.http4s.EntityEncoder
 import io.circe.{Decoder, Encoder}
 import org.http4s.circe.jsonEncoderOf
 import domain.Contract
-import dto.schemaregistry.{SchemaDTO, CreateSchemaResponseDTO}
+import dto.schema.{SchemaDTO, CreateSchemaResponseDTO}
 
 import scala.collection.immutable.::
 // todo use MockSchemaRegistryClient
@@ -20,7 +20,8 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient*/
 final class ContractsRegistryHttpClientTestImpl[F[_] : Monad]() extends ContractsRegistryHttpClient[F]:
   import ContractsRegistryHttpClientTestImpl.given
   import ContractsRegistryHttpClientTestImpl.*
-  import dto.schemaregistry.SchemaRegistryDTO.given
+  import http4s.entitycodecs.SchemaDtoEntityCodec.given
+  import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
 
   private val storage = TestContractsStorage()
   

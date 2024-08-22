@@ -31,7 +31,8 @@ class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
   import RestAPISpec.*
   import ContractsServerEndpoints.given
   import ContractHelper.given
-  import dto.schemaregistry.SchemaRegistryDTO.given
+  import http4s.entitycodecs.SchemaDtoEntityCodec.given
+  import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
   import endpoints.ContractsEndpoints.*
 
   import io.circe.generic.semiauto

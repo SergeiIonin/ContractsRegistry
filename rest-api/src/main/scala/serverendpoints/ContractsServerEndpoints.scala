@@ -15,11 +15,12 @@ import repository.ContractsRepository
 import sttp.tapir.server.ServerEndpoint.Full
 import org.http4s.circe.{jsonEncoderOf, jsonOf}
 import org.http4s.Uri
-import dto.schemaregistry.*
+import dto.schema.*
 
 class ContractsServerEndpoints[F[_] : Async : MonadThrow](baseUri: String, client: ContractsRegistryHttpClient[F]) extends ContractsEndpoints:
   import ContractsServerEndpoints.given
-  import dto.schemaregistry.SchemaRegistryDTO.given
+  import http4s.entitycodecs.SchemaDtoEntityCodec.given
+  import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
 
   // fixme add BadRequestDTO message
   private val createContractSE: ServerEndpoint[Any, F] =
