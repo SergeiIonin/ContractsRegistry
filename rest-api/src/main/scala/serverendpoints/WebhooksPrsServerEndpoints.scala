@@ -5,7 +5,7 @@ import domain.ContractPullRequest
 import dto.*
 import dto.github.webhooks.{PrErrorDTO, PrWebhookResponseDTO, BadRequestErrorDTO as PrBadRequestErrorDTO}
 import endpoints.WebhooksEndpoints
-import http.client.ContractsRegistryHttpClient
+import client.SchemasClient
 import producer.GitHubEventsProducer
 import domain.events.prs.{PrClosed, PrClosedKey}
 import repository.ContractsRepository
@@ -24,8 +24,6 @@ import sttp.tapir.server.ServerEndpoint.Full
 class WebhooksPrsServerEndpoints[F[_] : Async : MonadThrow : Logger](
                                                                       producer: GitHubEventsProducer[F, PrClosedKey, PrClosed]
                                                                     ) extends WebhooksEndpoints:
-  import ContractsServerEndpoints.given
-  
   private val logger = summon[Logger[F]]
   
   private val pullRequestSE: ServerEndpoint[Any, F] =
