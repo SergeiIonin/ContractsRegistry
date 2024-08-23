@@ -1,15 +1,16 @@
 package io.github.sergeiionin.contractsregistrator
 package serverendpoints
 
-import dto.{ContractErrorDTO, CreateContractDTO,
+import dto.{CreateContractDTO,
   CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
-import dto.schema.SchemaDTO
+import dto.schema.CreateSchemaDTO
+import dto.errors.HttpErrorDTO
 import io.circe.Encoder
 import org.http4s.circe.jsonEncoderOf
 import org.http4s.EntityEncoder
 
-trait ContractsHelper:
-  import ContractHelper.*
+trait SchemasHelper:
+  import SchemasHelper.*
   val schemaV1 =
     """
       | syntax = \"proto3\";\n
@@ -32,13 +33,13 @@ trait ContractsHelper:
       | }\n
       |""".stripMargin
   private def createContractDTO(subject: String, schema: String) = CreateContractDTO(subject = subject, schema = schema)
-  def createContractDTOJson(subject: String, schema: String) = CreateContractDTOEncoder.apply(createContractDTO(subject, schema)).toString
+  def createContractDTOJson(subject: String, schema: String) = createContractDTOEncoder.apply(createContractDTO(subject, schema)).toString
   
-  val schemaDTOv1: SchemaDTO = SchemaDTO(schema = schemaV1)
-  val schemaDTOv2: SchemaDTO = SchemaDTO(schema = schemaV2)
+  val schemaDTOv1: CreateSchemaDTO = CreateSchemaDTO(schema = schemaV1)
+  val schemaDTOv2: CreateSchemaDTO = CreateSchemaDTO(schema = schemaV2)
 
-object ContractHelper:
-  val CreateContractDTOEncoder = summon[Encoder[CreateContractDTO]]
-  given createContractDtoEncoder[F[_]]: EntityEncoder[F, CreateContractDTO] = jsonEncoderOf[F, CreateContractDTO]
+object SchemasHelper:
+  val createContractDTOEncoder = summon[Encoder[CreateContractDTO]]
+  given createContractDtoEntityEncoder[F[_]]: EntityEncoder[F, CreateContractDTO] = jsonEncoderOf[F, CreateContractDTO]
 
   
