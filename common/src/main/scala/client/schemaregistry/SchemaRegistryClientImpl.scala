@@ -15,7 +15,6 @@ import cats.syntax.option.*
 import cats.syntax.either.*
 import io.confluent.kafka.schemaregistry.{ParsedSchema, SchemaProvider}
 import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient
-import io.confluent.kafka.schemaregistry.protobuf.ProtobufSchema
 import org.http4s.client.Client
 import org.http4s.{EntityDecoder, EntityEncoder, Response, Uri}
 import sttp.tapir.path
