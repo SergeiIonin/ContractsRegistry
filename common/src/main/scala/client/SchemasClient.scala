@@ -1,6 +1,7 @@
 package io.github.sergeiionin.contractsregistrator
 package client
 
+import http.client.HttpClient
 import client.schemaregistry.SchemaRegistryClientImpl
 import dto.errors.HttpErrorDTO
 import dto.schema.*
@@ -19,5 +20,5 @@ trait SchemasClient[F[_]]:
   def deleteSchemaSubject(subject: String): EitherT[F, HttpErrorDTO, Versions]
 
 object SchemasClient:
-  def make[F[_] : Async](baseUri: String): Resource[F, SchemasClient[F]] =
-    EmberClientBuilder.default[F].build.map(client => SchemaRegistryClientImpl(baseUri, client))
+  def make[F[_] : Async](baseUri: String, httpClient: HttpClient[F]): Resource[F, SchemasClient[F]] =
+    Resource.pure[F, SchemasClient[F]](SchemaRegistryClientImpl(baseUri, httpClient))
