@@ -37,11 +37,15 @@ class WebhooksPrsServerEndpoints[F[_] : Async : MonadThrow : Logger](
           logger.error(s"Failed to parse contract pull request: $err") *>
             PrBadRequestErrorDTO(s"PR body is invalid: $body").asLeft[PrWebhookResponseDTO].pure[F]
         case Right(contractPr) =>
-          val response = PrWebhookResponseDTO(body, isMerged)
-          logger.info(s"Received PR: $pr") *>
-            producer.produce(PrClosedKey(contractPr.subject, contractPr.version),
-                              PrClosed(contractPr.subject, contractPr.version, isMerged)) *> // todo handle errors here?
+          logger.info(s"Received PR: $pr") *> {
+            val response = PrWebhookResponseDTO(body, isMerged)
+            if (isClosed) {
+              producer.produce(PrClosedKey(contractPr.subject, contractPr.version),
+                PrClosed(contractPr.subject, contractPr.version, isMerged)) *> // todo handle errors here?
+                response.asRight[PrErrorDTO].pure[F]
+            } else
               response.asRight[PrErrorDTO].pure[F]
+          }
     })
   
   private val getServerEndpoints: List[ServerEndpoint[Any, F]] =

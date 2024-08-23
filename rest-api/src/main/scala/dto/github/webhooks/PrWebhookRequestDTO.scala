@@ -8,7 +8,9 @@ final case class PrWebhookRequestDTO(
                                  action: String,
                                  number: Int,
                                  pull_request: PullRequest,
-) derives Encoder, Decoder, Schema
+) derives Encoder, Decoder, Schema:
+  def isMerged: Boolean = action == "closed" && pull_request.merged
+  def isRejected: Boolean = action == "closed" && !pull_request.merged
 
 final case class PullRequest(
                             url: String,
