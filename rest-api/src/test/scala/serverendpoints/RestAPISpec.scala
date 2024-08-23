@@ -1,54 +1,57 @@
 package io.github.sergeiionin.contractsregistrator
 package serverendpoints
 
+import client.SchemasClient
+import client.schemaregistry.SchemaRegistryClientImpl
+import config.RestApiApplicationConfig
+import dto.errors.HttpErrorDTO
+import dto.*
+import endpoints.ContractEndpoint
+import http.client.HttpClientTestImpl
+
 import cats.effect.IO
-import cats.syntax.option.*
-import cats.effect.unsafe.implicits.global
 import cats.effect.testing.specs2.CatsEffect
-import sttp.tapir
-import sttp.model.StatusCode.{BadRequest, Ok, Unauthorized}
-import sttp.tapir.Schema
-import sttp.tapir.server.ServerEndpoint
-import sttp.tapir.server.ServerEndpoint.Full
-import sttp.tapir.server.stub.TapirStubInterpreter
-import sttp.tapir.integ.cats.effect.CatsMonadError
-import sttp.client3.{Response, UriContext, basicRequest}
-import sttp.client3.testing.SttpBackendStub
-import org.specs2.mutable.Specification
+import cats.effect.unsafe.implicits.global
+import cats.syntax.option.*
+import org.http4s.Uri
+import org.scalatest.Ignore
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 import org.specs2.matcher.ShouldMatchers
 import org.specs2.mutable.*
 import org.specs2.specification.core.SpecStructure
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.matchers.should.Matchers
-import config.RestApiApplicationConfig
-import http.client.ContractsRegistryHttpClientTestImpl
-import dto.{ContractErrorDTO, ContractDTO, CreateContractDTO, CreateContractResponseDTO, DeleteContractResponseDTO, DeleteContractVersionResponseDTO}
-import endpoints.ContractEndpoint
-import org.http4s.Uri
-import org.scalatest.Ignore
+import sttp.client3.testing.SttpBackendStub
+import sttp.client3.{Response, UriContext, basicRequest}
+import sttp.model.StatusCode.{BadRequest, Ok, Unauthorized}
+import sttp.tapir
+import sttp.tapir.Schema
+import sttp.tapir.integ.cats.effect.CatsMonadError
+import sttp.tapir.server.ServerEndpoint
+import sttp.tapir.server.ServerEndpoint.Full
+import sttp.tapir.server.stub.TapirStubInterpreter
 
-class RestAPISpec extends Specification with CatsEffect with ContractsHelper:
-  import RestAPISpec.*
-  import ContractsServerEndpoints.given
-  import ContractHelper.given
-  import dto.schemaregistry.SchemaRegistryDTO.given
+class RestAPISpec extends Specification with CatsEffect with SchemasHelper:
   import endpoints.ContractsEndpoints.*
+  import http4s.entitycodecs.CreateSchemaDtoEntityCodec.given
+  import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
 
-  import io.circe.generic.semiauto
+  import SchemasHelper.given
+  import RestAPISpec.*
   import io.circe.Encoder
+  import io.circe.generic.semiauto
 
   override def is: SpecStructure = sequential ^ super.is
 
   val createContractDTOEncoder = summon[Encoder[CreateContractDTO]]
 
   def addContracts(subject: String): IO[Unit] =
-    for
-      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), schemaDTOv1, None)
-      _ <- contractsClient.post(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject/versions"), schemaDTOv2, None)
-    yield ()
+      (for
+        _ <- schemasClient.createSchema(subject, schemaDTOv1)
+        _ <- schemasClient.createSchema(subject, schemaDTOv2)
+      yield ()).value.void
 
   def deleteContractsForSubject(subject: String): IO[Unit] =
-    contractsClient.delete(Uri.unsafeFromString(s"$baseClientUri/subjects/$subject"), None).void
+      schemasClient.deleteSchemaSubject(subject).value.void
 
   "createContract" should {
     val backendCreateContractStub =
@@ -282,29 +285,30 @@ object RestAPISpec:
   val port = config.restApi.port
   val baseClientUri = s"${config.schemaRegistry.host}:${config.schemaRegistry.port}"
   
-  val contractsClient = ContractsRegistryHttpClientTestImpl.make[IO]()
+  val httpClient = HttpClientTestImpl.make[IO]()
+  val schemasClient = SchemaRegistryClientImpl(baseClientUri, httpClient)
 
-  val commandsServerEndpoints = ContractsServerEndpoints[IO](baseClientUri, contractsClient)
+  val commandsServerEndpoints = ContractsServerEndpoints[IO](schemasClient)
 
   val nameToServerEndpoint = commandsServerEndpoints.serverEndpoints.map(se => se.info.name.get -> se).toMap
 
   val createContractServerEndpoint = nameToServerEndpoint(ContractEndpoint.CreateContract.toString)
-    .asInstanceOf[Full[Unit, Unit, CreateContractDTO, ContractErrorDTO, CreateContractResponseDTO, Any, IO]]
+    .asInstanceOf[Full[Unit, Unit, CreateContractDTO, HttpErrorDTO, CreateContractResponseDTO, Any, IO]]
   
   val deleteContractVersionServerEndpoint = nameToServerEndpoint(ContractEndpoint.DeleteContractVersion.toString)
-    .asInstanceOf[Full[Unit, Unit, (String, Int), ContractErrorDTO, DeleteContractVersionResponseDTO, Any, IO]]
+    .asInstanceOf[Full[Unit, Unit, (String, Int), HttpErrorDTO, DeleteContractVersionResponseDTO, Any, IO]]
     
   val deleteContractSubjectServerEndpoint = nameToServerEndpoint(ContractEndpoint.DeleteContractSubject.toString)
-    .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, DeleteContractResponseDTO, Any, IO]]
+    .asInstanceOf[Full[Unit, Unit, String, HttpErrorDTO, DeleteContractResponseDTO, Any, IO]]
 
   val getContractVersionServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetContractVersion.toString)
-    .asInstanceOf[Full[Unit, Unit, (String, Int), ContractErrorDTO, ContractDTO, Any, IO]]
+    .asInstanceOf[Full[Unit, Unit, (String, Int), HttpErrorDTO, ContractDTO, Any, IO]]
 
   val getVersionsServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetVersions.toString)
-    .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, List[Int], Any, IO]]
+    .asInstanceOf[Full[Unit, Unit, String, HttpErrorDTO, List[Int], Any, IO]]
 
   val getSubjectsServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetSubjects.toString)
-    .asInstanceOf[Full[Unit, Unit, Unit, ContractErrorDTO, List[String], Any, IO]]
+    .asInstanceOf[Full[Unit, Unit, Unit, HttpErrorDTO, List[String], Any, IO]]
   
   val getLatestContractServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetLatestContract.toString)
-    .asInstanceOf[Full[Unit, Unit, String, ContractErrorDTO, ContractDTO, Any, IO]]
+    .asInstanceOf[Full[Unit, Unit, String, HttpErrorDTO, ContractDTO, Any, IO]]

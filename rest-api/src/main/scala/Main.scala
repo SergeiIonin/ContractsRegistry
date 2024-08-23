@@ -1,7 +1,7 @@
 package io.github.sergeiionin.contractsregistrator
 
 import config.RestApiApplicationConfig
-import http.client.ContractsRegistryHttpClient
+import client.SchemasClient
 import producer.GitHubEventsProducer
 import domain.events.prs.{PrClosed, PrClosedKey}
 import serverendpoints.{ContractsServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
@@ -14,8 +14,10 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
-import io.circe.syntax.* 
+import io.circe.syntax.*
 import domain.events.prs.given
+
+import io.github.sergeiionin.contractsregistrator.http.client.HttpClient
 
 object Main extends IOApp:
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -38,10 +40,11 @@ object Main extends IOApp:
   
   def run(args: List[String]): IO[ExitCode] =
     (for
-      contractsClient           <- ContractsRegistryHttpClient.make[IO]()
+      httpClient                <- HttpClient.make[IO]()
+      schemasClient             <- SchemasClient.make[IO](baseClientUri, httpClient)
       kafkaProducer             <- KafkaProducer[IO].resource[PrClosedKey, PrClosed](producerSettings)
       producer                  <- GitHubEventsProducer.makePRsProducer(producerTopic, kafkaProducer)
-      contractsServerEndpoints  = ContractsServerEndpoints[IO](baseClientUri, contractsClient)
+      contractsServerEndpoints  = ContractsServerEndpoints[IO](schemasClient)
       webhooksServerEndpoints   = WebhooksPrsServerEndpoints[IO](producer)
       serverEndpoints           = contractsServerEndpoints.serverEndpoints ++ webhooksServerEndpoints.serverEndpoints
       swaggerServerEndpoints    = SwaggerServerEndpoints(contractsServerEndpoints.getEndpoints ++
