@@ -10,7 +10,7 @@ import sttp.model.StatusCode
 trait DeleteContractEndpoints extends BaseContractsEndpoint:
   
   val deleteContractVersion =
-    base.delete
+    root.delete
       .in(`:subject`)
       .in(versions)
       .in(`:version`)
@@ -19,7 +19,7 @@ trait DeleteContractEndpoints extends BaseContractsEndpoint:
       .description("Delete a contracts version")
   
   val deleteContract =
-    base.delete
+    root.delete
       .in(`:subject`)
       .out(jsonBody[DeleteContractResponseDTO])
       .name(ContractEndpoint.DeleteContractSubject.toString)
