@@ -19,4 +19,4 @@ final case class CreateContractResponseDTO(name: String, id: Int) derives Encode
 
 final case class DeleteContractVersionResponseDTO(subject: String, version: Int) derives Encoder, Decoder, Schema
 
-final case class DeleteContractResponseDTO(subject: String, versions: List[Int]) derives Encoder, Decoder, Schema
+final case class DeleteContractResponseDTO(subject: String) derives Encoder, Decoder, Schema
