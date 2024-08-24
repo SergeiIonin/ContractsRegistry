@@ -21,11 +21,3 @@ trait HttpClient[F[_]]:
 object HttpClient:
   def make[F[_] : Async](): Resource[F, HttpClient[F]] =
     EmberClientBuilder.default[F].build.map(HttpClientImpl(_))
-  
-  extension[F[_] : Functor, R](r: F[R])
-    def toEitherT: EitherT[F, HttpErrorDTO, R] =
-      EitherT.liftF[F, HttpErrorDTO, R](r)
-  
-  extension[F[_] : Applicative] (err: HttpErrorDTO)
-    def toLeftEitherT[R]: EitherT[F, HttpErrorDTO, R] =
-      EitherT.leftT[F, R](err)

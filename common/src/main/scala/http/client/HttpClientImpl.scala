@@ -10,7 +10,8 @@ import org.http4s.EntityEncoder
 import dto.errors.HttpErrorDTO
 
 final class HttpClientImpl[F[_] : Async](client: Client[F]) extends HttpClient[F]:
-  import HttpClient.*
+  import extensions.*
+  
   def get(uri: Uri, token: Option[String]): EitherT[F, HttpErrorDTO, Response[F]] =
     client.run(ClientUtils.getRequest(uri, token))
       .use(resp => resp.pure[F])
