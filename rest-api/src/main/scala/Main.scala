@@ -33,11 +33,11 @@ object Main extends IOApp:
   
   val bootstrapServers = config.kafkaProducer.bootstrapServers.head
   
+  // todo add get endpoints
   def run(args: List[String]): IO[ExitCode] =
     (for
       httpClient                      <- HttpClient.make[IO]()
       createSchemaClient              <- CreateSchemaClient.make[IO](baseClientUri, httpClient)
-      deleteSchemaClient              <- DeleteSchemaClient.make[IO](baseClientUri, httpClient)
       kafkaPrsProducer                <- PrEventsKafkaProducer.make[IO](prsTopic, bootstrapServers)
       kafkaContractsProducer          <- ContractEventsKafkaProducer.make[IO](contractsDeletedTopic, bootstrapServers)
       createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient)
@@ -46,9 +46,11 @@ object Main extends IOApp:
       serverEndpoints                 = createContractsServerEndpoints.serverEndpoints ++
                                           deleteContractsServerEndpoints.serverEndpoints ++
                                           webhooksServerEndpoints.serverEndpoints
-      swaggerServerEndpoints          = SwaggerServerEndpoints(createContractsServerEndpoints.getEndpoints ++
-                                                deleteContractsServerEndpoints.getEndpoints ++  
-                                                webhooksServerEndpoints.getEndpoints)
+      swaggerServerEndpoints          = SwaggerServerEndpoints[IO](
+                                                createContractsServerEndpoints.getEndpoints ++
+                                                deleteContractsServerEndpoints.getEndpoints ++
+                                                webhooksServerEndpoints.getEndpoints
+                                        )
                                                   .getSwaggerUIServerEndpoints()
       routes                          = Http4sServerInterpreter[IO]().toRoutes(serverEndpoints ++ swaggerServerEndpoints)
       server                          <- EmberServerBuilder
