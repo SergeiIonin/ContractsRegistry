@@ -1,8 +1,8 @@
 package io.github.sergeiionin.contractsregistrator
 package serverendpoints
 
-import client.SchemasClient
-import client.schemaregistry.SchemaRegistryClientImpl
+import client.DeleteSchemaClient
+import client.schemaregistry.CreateSchemaClientImpl
 import config.RestApiApplicationConfig
 import dto.errors.HttpErrorDTO
 import dto.*
@@ -31,7 +31,7 @@ import sttp.tapir.server.ServerEndpoint.Full
 import sttp.tapir.server.stub.TapirStubInterpreter
 
 class RestAPISpec extends Specification with CatsEffect with SchemasHelper:
-  import endpoints.ContractsEndpoints.*
+  import endpoints.CreateContractsEndpoints.*
   import http4s.entitycodecs.CreateSchemaDtoEntityCodec.given
   import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
 
@@ -286,7 +286,7 @@ object RestAPISpec:
   val baseClientUri = s"${config.schemaRegistry.host}:${config.schemaRegistry.port}"
   
   val httpClient = HttpClientTestImpl.make[IO]()
-  val schemasClient = SchemaRegistryClientImpl(baseClientUri, httpClient)
+  val schemasClient = CreateSchemaClientImpl(baseClientUri, httpClient)
 
   val commandsServerEndpoints = ContractsServerEndpoints[IO](schemasClient)
 
