@@ -5,25 +5,17 @@ import domain.ContractPullRequest
 import dto.*
 import dto.github.webhooks.{PrErrorDTO, PrWebhookResponseDTO, BadRequestErrorDTO as PrBadRequestErrorDTO}
 import endpoints.WebhooksEndpoints
-import client.SchemasClient
-import producer.GitHubEventsProducer
+import producer.EventsProducer
 import domain.events.prs.{PrClosed, PrClosedKey}
-import repository.ContractsRepository
-
-import cats.effect.Concurrent
-import cats.effect.kernel.Async
+import cats.effect.Async
 import cats.syntax.all.*
-import cats.syntax.monad.*
-import cats.{Monad, MonadThrow}
-import org.http4s.circe.{jsonEncoderOf, jsonOf}
-import org.http4s.{EntityDecoder, EntityEncoder, Uri}
 import org.typelevel.log4cats.Logger
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
 
-class WebhooksPrsServerEndpoints[F[_] : Async : MonadThrow : Logger](
-                                                                      producer: GitHubEventsProducer[F, PrClosedKey, PrClosed]
-                                                                    ) extends WebhooksEndpoints:
+class WebhooksPrsServerEndpoints[F[_] : Async : Logger](
+                                                         producer: EventsProducer[F, PrClosedKey, PrClosed]
+                                                       ) extends WebhooksEndpoints:
   private val logger = summon[Logger[F]]
   
   private val pullRequestSE: ServerEndpoint[Any, F] =
@@ -39,10 +31,11 @@ class WebhooksPrsServerEndpoints[F[_] : Async : MonadThrow : Logger](
         case Right(contractPr) =>
           logger.info(s"Received PR: $pr") *> {
             val response = PrWebhookResponseDTO(body, isMerged)
-            if (isClosed) {
-              producer.produce(PrClosedKey(contractPr.subject, contractPr.version),
-                PrClosed(contractPr.subject, contractPr.version, isMerged)) *> // todo handle errors here?
-                response.asRight[PrErrorDTO].pure[F]
+            if (pr.isClosed) {
+              val key = PrClosedKey(contractPr.subject, contractPr.version)
+              val msg = PrClosed(contractPr.subject, contractPr.version, isMerged)
+              producer.produce(key, msg)
+                .as(response.asRight[PrErrorDTO])
             } else
               response.asRight[PrErrorDTO].pure[F]
           }
