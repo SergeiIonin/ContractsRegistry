@@ -24,6 +24,6 @@ extension (versions: Versions)
   def headOption: Option[Int] = versions.headOption
 
 final case class CreateSchemaResponseDTO(id: Int) derives Encoder, Decoder, Schema
-final case class CreateSchemaDTO(schemaType: String = "PROTOBUF", schema: String)derives Encoder, Decoder, Schema
+final case class CreateSchemaDTO(schemaType: String = "PROTOBUF", schema: String) derives Encoder, Decoder, Schema
 
 final case class SchemaDTO(subject: String, version: Int, id: Int, schemaType: SchemaType, schema: String) derives Encoder, Decoder, Schema
