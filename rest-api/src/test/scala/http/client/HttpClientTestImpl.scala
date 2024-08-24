@@ -22,6 +22,7 @@ import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient*/
 
 final class HttpClientTestImpl[F[_] : Monad]() extends HttpClient[F]:
   import HttpClientTestImpl.given
+  import http.client.extensions.*
   import http4s.entitycodecs.CreateSchemaDtoEntityCodec.given
   import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
   import http4s.entitycodecs.SchemaDtoEntityCodec.given
