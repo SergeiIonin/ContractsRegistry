@@ -1,23 +1,24 @@
 package io.github.sergeiionin.contractsregistrator
 
+import client.{CreateSchemaClient, DeleteSchemaClient}
 import config.RestApiApplicationConfig
-import client.SchemasClient
-import producer.GitHubEventsProducer
-import domain.events.prs.{PrClosed, PrClosedKey}
-import serverendpoints.{ContractsServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
+import domain.events.contracts.{ContractDeleteRequested, ContractDeleteRequestedKey}
+import domain.events.prs.{PrClosed, PrClosedKey, given}
+import http.client.HttpClient
+import producer.EventsProducer
+import producer.contracts.ContractEventsKafkaProducer
+import producer.prs.PrEventsKafkaProducer
+import serverendpoints.{CreateContractServerEndpoints, DeleteContractServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
 
 import cats.effect.{ExitCode, IO, IOApp}
 import com.comcast.ip4s.{Host, Port, port}
 import fs2.kafka.{KafkaProducer, ProducerSettings, Serializer}
+import io.circe.syntax.*
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
-import io.circe.syntax.*
-import domain.events.prs.given
-
-import io.github.sergeiionin.contractsregistrator.http.client.HttpClient
 
 object Main extends IOApp:
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -27,38 +28,37 @@ object Main extends IOApp:
   val port = config.restApi.port
   val baseClientUri = s"${config.schemaRegistry.host}:${config.schemaRegistry.port}"
   
-  val producerTopic = config.kafkaProducer.prsTopic
+  val prsTopic = config.kafkaProducer.prsTopic
+  val contractsDeletedTopic = config.kafkaProducer.contractsDeletedTopic
   
-  given Serializer[IO, PrClosedKey] = Serializer.lift(key => IO.pure(key.asJson.noSpaces.getBytes))
-  given Serializer[IO, PrClosed] = Serializer.lift(event => IO.pure(event.asJson.noSpaces.getBytes))
-
-  val producerSettings: ProducerSettings[IO, PrClosedKey, PrClosed] =
-    ProducerSettings[IO, PrClosedKey, PrClosed](
-      Serializer.apply[IO, PrClosedKey],
-      Serializer.apply[IO, PrClosed],
-    ).withBootstrapServers(config.kafkaProducer.bootstrapServers.head)
+  val bootstrapServers = config.kafkaProducer.bootstrapServers.head
   
   def run(args: List[String]): IO[ExitCode] =
     (for
-      httpClient                <- HttpClient.make[IO]()
-      schemasClient             <- SchemasClient.make[IO](baseClientUri, httpClient)
-      kafkaProducer             <- KafkaProducer[IO].resource[PrClosedKey, PrClosed](producerSettings)
-      producer                  <- GitHubEventsProducer.makePRsProducer(producerTopic, kafkaProducer)
-      contractsServerEndpoints  = ContractsServerEndpoints[IO](schemasClient)
-      webhooksServerEndpoints   = WebhooksPrsServerEndpoints[IO](producer)
-      serverEndpoints           = contractsServerEndpoints.serverEndpoints ++ webhooksServerEndpoints.serverEndpoints
-      swaggerServerEndpoints    = SwaggerServerEndpoints(contractsServerEndpoints.getEndpoints ++
-                                          webhooksServerEndpoints.getEndpoints)
-                                            .getSwaggerUIServerEndpoints()
-      routes                    = Http4sServerInterpreter[IO]().toRoutes(serverEndpoints ++ swaggerServerEndpoints)
-      server                    <- EmberServerBuilder
-                                      .default[IO]
-                                      .withHost(Host.fromString("localhost").get)
-                                      .withPort(Port.fromInt(port).get)
-                                      .withHttpApp(routes.orNotFound)
-                                      .build
+      httpClient                      <- HttpClient.make[IO]()
+      createSchemaClient              <- CreateSchemaClient.make[IO](baseClientUri, httpClient)
+      deleteSchemaClient              <- DeleteSchemaClient.make[IO](baseClientUri, httpClient)
+      kafkaPrsProducer                <- PrEventsKafkaProducer.make[IO](prsTopic, bootstrapServers)
+      kafkaContractsProducer          <- ContractEventsKafkaProducer.make[IO](contractsDeletedTopic, bootstrapServers)
+      createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient)
+      deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](kafkaContractsProducer)
+      webhooksServerEndpoints         = WebhooksPrsServerEndpoints[IO](kafkaPrsProducer)
+      serverEndpoints                 = createContractsServerEndpoints.serverEndpoints ++
+                                          deleteContractsServerEndpoints.serverEndpoints ++
+                                          webhooksServerEndpoints.serverEndpoints
+      swaggerServerEndpoints          = SwaggerServerEndpoints(createContractsServerEndpoints.getEndpoints ++
+                                                deleteContractsServerEndpoints.getEndpoints ++  
+                                                webhooksServerEndpoints.getEndpoints)
+                                                  .getSwaggerUIServerEndpoints()
+      routes                          = Http4sServerInterpreter[IO]().toRoutes(serverEndpoints ++ swaggerServerEndpoints)
+      server                          <- EmberServerBuilder
+                                            .default[IO]
+                                            .withHost(Host.fromString("localhost").get)
+                                            .withPort(Port.fromInt(port).get)
+                                            .withHttpApp(routes.orNotFound)
+                                            .build
     yield server).use { _ =>
-      IO.println(s"Server started on $host:$port") *>
-      IO.println(s"View REST API reference at $host:$port/docs") *>
-      IO.never
+          IO.println(s"Server started on $host:$port") *>
+          IO.println(s"View REST API reference at $host:$port/docs") *>
+          IO.never
     }.as(ExitCode.Success)
