@@ -8,7 +8,7 @@ import sttp.tapir.json.circe.*
 
 trait BaseContractsEndpoint:
   
-  val base =
+  def root =
     endpoint
       .in(contracts)
       .errorOut(

@@ -10,7 +10,7 @@ import sttp.model.StatusCode
 trait GetContractEndpoints extends BaseContractsEndpoint:
   
   val getContractVersion =
-    base.get
+    root.get
       .in(`:subject`)
       .in(versions)
       .in(`:version`)
@@ -19,7 +19,7 @@ trait GetContractEndpoints extends BaseContractsEndpoint:
       .description("Get a contract by subject and version")
 
   val getVersions =
-    base.get
+    root.get
       .in(`:subject`)
       .in(versions)
       .out(jsonBody[List[Int]])
@@ -27,14 +27,14 @@ trait GetContractEndpoints extends BaseContractsEndpoint:
       .description("Get all versions of a contract")
   
   val getSubjects =
-    base.get
+    root.get
       .in(subjects)
       .out(jsonBody[List[String]])
       .name(ContractEndpoint.GetSubjects.toString)
       .description("Get all subjects")
   
   val getLatestContract =
-    base.get
+    root.get
       .in(`:subject`)
       .in(latest)
       .out(jsonBody[ContractDTO])

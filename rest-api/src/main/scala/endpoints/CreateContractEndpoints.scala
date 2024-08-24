@@ -10,7 +10,7 @@ import sttp.model.StatusCode
 trait CreateContractEndpoints extends BaseContractsEndpoint:
   
   val createContract =
-    base.post
+    root.post
       .in(jsonBody[CreateContractDTO])
       .out(jsonBody[CreateContractResponseDTO])
       .name(ContractEndpoint.CreateContract.toString)
