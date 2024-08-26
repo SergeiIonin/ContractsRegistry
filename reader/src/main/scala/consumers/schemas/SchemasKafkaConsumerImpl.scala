@@ -56,12 +56,13 @@ final class SchemasKafkaConsumerImpl[F[_] : Async : Logger](
   private def deleteContract(subject: String): F[Unit] =
     contractService.deleteContract(subject)    
   
-  private def createContractVersion(subject: String, version: Int): F[Unit] =
-    contractsProducer
-      .produce(
-        ContractCreateRequestedKey(subject, version),
-        ContractCreateRequested(subject, version)
-      )
+  private def createContractVersion(contract: Contract): F[Unit] =
+    contractService.saveContract(contract) >>
+      contractsProducer
+        .produce(
+          ContractCreateRequestedKey(contract.subject, contract.version),
+          ContractCreateRequested(contract)
+        )
   
   private def toContract(recordRaw: Option[String]): Either[CirceError, Contract] =
     parseRaw[Contract](recordRaw)
@@ -85,7 +86,7 @@ final class SchemasKafkaConsumerImpl[F[_] : Async : Logger](
                 deleteContractVersion(c.subject, c.version)
             case Right(c) =>
               logger.info(s"Registering new contract: ${c.subject}:${c.version}") >>
-                createContractVersion(c.subject, c.version)
+                createContractVersion(c)
         case DELETE_SUBJECT =>
           val subjectAndVersion = toSubjectAndVersion(recordOpt)
           subjectAndVersion.fold[F[Unit]](
@@ -100,7 +101,11 @@ final class SchemasKafkaConsumerImpl[F[_] : Async : Logger](
     }
 
 object SchemasKafkaConsumerImpl:
-  def make[F[_] : Async : Logger](topics: NonEmptyList[String], consumerSettings: ConsumerSettings[F, Bytes, Bytes],
-                         contractsProducer: EventsProducer[F, ContractCreateRequestedKey, ContractCreateRequested]): Resource[F, Consumer[F]] =
+  def make[F[_] : Async : Logger](
+                                   topics: NonEmptyList[String],
+                                   consumerSettings: ConsumerSettings[F, Bytes, Bytes],
+                                   contractService: ContractService[F], 
+                                   contractsProducer: EventsProducer[F, ContractCreateRequestedKey, ContractCreateRequested]
+                                 ): Resource[F, Consumer[F]] =
     KafkaConsumer.resource[F, Bytes, Bytes](consumerSettings)
-      .map(consumer => SchemasKafkaConsumerImpl[F](topics, consumer, contractsProducer))
+      .map(consumer => SchemasKafkaConsumerImpl[F](topics, consumer, contractService, contractsProducer))
