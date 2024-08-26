@@ -8,8 +8,15 @@ import pureconfig.generic.derivation.default.*
 final case class KafkaConfig(
                            schemasTopic: String,
                            prsTopic: String,
+                           contractsCreatedTopic: String,
+                           contractsDeletedTopic: String,
+                           producerProps: ProducerProps,
                            consumerProps: ConsumerProps
                          ) derives ConfigReader
+
+final case class ProducerProps(
+  bootstrapServers: List[String]
+) derives ConfigReader
 
 final case class ConsumerProps(
   bootstrapServers: List[String],
