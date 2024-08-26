@@ -37,7 +37,9 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Sessio
         Contract(subject, version, id, schema, SchemaType.fromString(schemaType), isMerged)
     }
 
-  private val subjectAndVersionDecoder: skunk.Decoder[Int] = int4
+  private val versionDecoder: skunk.Decoder[Int] = int4
+  
+  private val subjectDecoder: skunk.Decoder[String] = text
 
   private val insertCommand: Command[Contract] =
     sql"INSERT INTO contracts (subject, version, id, schema, schemaType, isMerged) VALUES ($contractEncoder)".command
@@ -51,11 +53,20 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Sessio
   private val selectAllQuery: Query[Void, Contract] =
     sql"SELECT subject, version, id, schema, schemaType, isMerged FROM contracts".query(contractDecoder)
 
-  private val selectAllVersionsForSubjectQuery: Query[String, Int] =
-    sql"SELECT version FROM contracts WHERE subject = $varchar".query(subjectAndVersionDecoder)
+  private val selectAllSubjectsQuery: Query[Void, String] =
+    sql"SELECT subject FROM contracts".query(subjectDecoder)
 
-  private val deleteCommand: Command[(String, Int)] =
+  private val selectAllVersionsForSubjectQuery: Query[String, Int] =
+    sql"SELECT version FROM contracts WHERE subject = $varchar".query(versionDecoder)
+
+  private val selectLatestContractQuery: Query[String, Contract] =
+    sql"SELECT subject, version, id, schema, schemaType, isMerged FROM contracts WHERE subject = $varchar ORDER BY version DESC LIMIT 1".query(contractDecoder)
+  
+  private val deleteSubjectAndVersionCommand: Command[(String, Int)] =
     sql"DELETE FROM contracts WHERE subject = $varchar AND version = $int4".command
+
+  private val deleteSubjectCommand: Command[String] =
+    sql"DELETE FROM contracts WHERE subject = $varchar".command
 
   override def save(contract: Contract): F[Unit] =
     sessionR.use { session =>
@@ -83,12 +94,27 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Sessio
       session.stream(selectAllQuery)(Void, 10).pure[F]
     }
 
+  override def getAllSubjects(): F[fs2.Stream[F, String]] =
+    sessionR.use { session =>
+      session.stream(selectAllSubjectsQuery)(Void, 10).pure[F]
+    }
+  
   override def getAllVersionsForSubject(subject: String): F[fs2.Stream[F, Int]] =
     sessionR.use { session =>
       session.stream(selectAllVersionsForSubjectQuery)(subject, 10).pure[F]
     }
 
+  override def getLatestContract(subject: String): F[Option[Contract]] =
+    sessionR.use { session =>
+      session.prepare(selectLatestContractQuery).flatMap(_.option(subject))
+    }
+  
   override def delete(subject: String, version: Int): F[Unit] =
     sessionR.use { session =>
-      session.prepare(deleteCommand).flatMap(_.execute((subject, version))).void
+      session.prepare(deleteSubjectAndVersionCommand).flatMap(_.execute((subject, version))).void
+    }
+
+  override def deleteSubject(subject: String): F[Unit] =
+    sessionR.use { session =>
+      session.prepare(deleteSubjectCommand).flatMap(_.execute(subject)).void
     }
