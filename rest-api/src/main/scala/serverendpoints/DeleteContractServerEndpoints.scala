@@ -22,7 +22,7 @@ class DeleteContractServerEndpoints[F[_] : Async](
 
   private val deleteContractVersionSE: ServerEndpoint[Any, F] =
     deleteContractVersion.serverLogic((subject, version) => {
-      val key = ContractDeleteRequestedKey(subject)
+      val key = ContractDeleteRequestedKey(subject, version.some)
       val msg = ContractDeleteRequested(subject, version.some)
       producer.produce(key, msg)
         .as(DeleteContractVersionResponseDTO(subject, version).asRight[HttpErrorDTO])
@@ -30,7 +30,7 @@ class DeleteContractServerEndpoints[F[_] : Async](
 
   private val deleteContractSE: ServerEndpoint[Any, F] =
     deleteContract.serverLogic(subject => {
-      val key = ContractDeleteRequestedKey(subject)
+      val key = ContractDeleteRequestedKey(subject, None)
       val msg = ContractDeleteRequested(subject, None, deleteSubject = true)
       producer.produce(key, msg)
         .as(DeleteContractResponseDTO(subject).asRight[HttpErrorDTO])

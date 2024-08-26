@@ -1,11 +1,14 @@
 package io.github.sergeiionin.contractsregistrator
 package producer
 
+import domain.events.contracts.{ContractCreateRequestedKey, ContractCreateRequested,
+  ContractDeleteRequestedKey, ContractDeleteRequested}
 import cats.effect.Async
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
+import cats.syntax.applicative.*
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerSettings, Serializer}
-import io.github.sergeiionin.contractsregistrator.domain.events.contracts.{ContractDeleteRequested, ContractDeleteRequestedKey}
+import io.circe.syntax.*
 
 abstract class EventsKafkaProducer[F[_] : Async, K, V]() extends EventsProducer[F, K, V]:
   def kafkaProducer: KafkaProducer[F, K, V]
@@ -19,3 +22,15 @@ object EventsKafkaProducer:
       Serializer.apply[F, K],
       Serializer.apply[F, V],
     ).withBootstrapServers(bootstrapServers)
+  
+  given serializerContractCreateRequestedKey[F[_] : Async]: Serializer[F, ContractCreateRequestedKey] =
+    Serializer.lift(key => key.asJson.noSpaces.getBytes.pure[F])
+
+  given serializerContractCreateRequested[F[_] : Async]: Serializer[F, ContractCreateRequested] =
+    Serializer.lift(event => event.asJson.noSpaces.getBytes.pure[F])
+
+  given serializerContractDeleteRequestedKey[F[_] : Async]: Serializer[F, ContractDeleteRequestedKey] =
+    Serializer.lift(key => key.asJson.noSpaces.getBytes.pure[F])
+  
+  given serializerContractDeleteRequested[F[_] : Async]: Serializer[F, ContractDeleteRequested] =
+    Serializer.lift(event => event.asJson.noSpaces.getBytes.pure[F])

@@ -1,30 +1,32 @@
 package io.github.sergeiionin.contractsregistrator
 
+import config.ApplicationConfig
+import consumers.KafkaEventsConsumer.given
+import consumers.contracts.ContractsKafkaConsumerImpl
+import consumers.schemas.KeyType.*
+import consumers.schemas.{KeyType, SchemasKafkaConsumerImpl}
+import domain.events.contracts.{ContractEvent, ContractEventKey}
+import domain.events.prs.{PrClosed, PrClosedKey}
+import domain.{Contract, SubjectAndVersion}
+import github.{GitHubClient, GitHubService}
+import handler.ContractsHandler
+import producer.EventsKafkaProducer.given
+import producer.contracts.ContractCreateEventsKafkaProducer
+import repository.ContractsRepository
+import service.ContractService
+
 import cats.data.NonEmptyList
 import cats.effect.{ExitCode, IO, IOApp}
-import fs2.kafka.{ConsumerSettings, Deserializer, KafkaConsumer}
-import fs2.kafka.*
 import cats.syntax.option.*
-import handler.ContractsHandler
-import repository.ContractsRepository
-
-import io.circe.{Decoder, parser}
+import fs2.kafka.{ConsumerSettings, Deserializer, KafkaConsumer}
 import io.circe
 import io.circe.syntax.given
-import domain.{Contract, SubjectAndVersion}
-import github.GitHubClient
-
+import io.circe.{Decoder, parser}
+import natchez.Trace.Implicits.noop
+import org.http4s.ember.client.EmberClientBuilder
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
-import org.http4s.ember.client.EmberClientBuilder
 import skunk.Session
-import natchez.Trace.Implicits.noop
-import config.ApplicationConfig
-import schemaregistry.KeyType
-import schemaregistry.KeyType.*
-import schemaregistry.schemasconsumer.SchemasKafkaConsumerImpl
-
-import domain.events.prs.{PrClosed, PrClosedKey}
 
 object Main extends IOApp:
   
@@ -63,34 +65,13 @@ object Main extends IOApp:
         )
         .withProperties(consumerProps)
     
-    def processSchemaRegistryRecord(keyType: KeyType,
-                                    recordOpt: Option[String],
-                                    handler: ContractsHandler[IO]): IO[Unit] =
-      logger.info(s"Received record: ${recordOpt.getOrElse("N/A")}") >> {
-        keyType match
-          case SCHEMA =>
-            val contract = toContract(recordOpt)
-            contract match
-              case Left(e) =>
-                logger.error(s"Failed to parse contract: ${e.getMessage}")
-              case Right(c) if c.deleted.contains(true) =>
-                logger.info(s"Deleting contract's version: ${c.subject}:${c.version}") >>
-                  handler.deleteContractVersion(c.subject, c.version)
-              case Right(c) =>
-                logger.info(s"Registering new contract: ${c.subject}:${c.version}") >>
-                  handler.addContract(c)
-          case DELETE_SUBJECT =>
-            val subjectAndVersion = toSubjectAndVersion(recordOpt)
-            subjectAndVersion.fold[IO[Unit]](
-              e => logger.error(s"Failed to parse delete record: ${e.getMessage}"),
-              sv => logger.info(s"Deleting contract: ${sv.subject}:${sv.version}") >> // fixme rm ${sv.version}
-                handler.deleteContract(sv.subject)
-            )
-          case NOOP =>
-            logger.info("NOOP record")
-          case OTHER =>
-            logger.error("Other record type (not a _schema topic record)")
-      }
+    val contractsConsumerSettings =
+      ConsumerSettings
+        .apply(
+          Deserializer.apply[IO, ContractEventKey],
+          Deserializer.apply[IO, ContractEvent]
+        )
+        .withProperties(consumerProps)  
     
     def processEventRecord(key: String,
                            recordOpt: Option[String],
@@ -114,31 +95,27 @@ object Main extends IOApp:
       yield ()
     
     (for
-      session         <- Session.pooled[IO](host = postgres.host, port = postgres.port, user = postgres.user,
+      session           <- Session.pooled[IO](host = postgres.host, port = postgres.port, user = postgres.user,
                             database = postgres.database, password = postgres.password.some, max = 10)
-      repo            <- ContractsRepository.make[IO](session)
-      client          <- EmberClientBuilder.default[IO].build
-      consumer        <- KafkaConsumer.resource[IO, Bytes, Bytes](consumerSettings)
-      schemasConsumer = SchemasKafkaConsumerImpl[IO](consumer)
-      gitClient       <- GitHubClient.make[IO](contractConfig.owner, contractConfig.repo, contractConfig.path,
-                                      contractConfig.baseBranch, client, Some(contractConfig.token))
-      handler         <- ContractsHandler.make[IO](repo, gitClient)
-    yield (schemasConsumer, handler)).use {
-      case (sc, h) =>
-        logger.info("Starting contracts registry") >>
-        sc.subscribe(NonEmptyList.fromListUnsafe(topics)) >>
-          logger.info(s"Subscribed to topics ${topics.mkString(", ")}") >>
-          sc.stream()
-            .evalMap(cr =>
-              val key = Bytes.toString(cr.record.key)
-              val keyType = sc.getRecordKeyType(key)
-              val recordOpt = Option(cr.record.value).map(bytes => Bytes.toString(bytes))
-              keyType match
-                case SCHEMA | DELETE_SUBJECT | NOOP =>
-                  processSchemaRegistryRecord(keyType, recordOpt, h)
-                case OTHER =>
-                  processEventRecord(key, recordOpt, h)
-            )
-            .compile
-            .drain
+      repo              <- ContractsRepository.make[IO](session)
+      service           <- ContractService.make[IO](repo)
+      client            <- EmberClientBuilder.default[IO].build
+      contractsProducer <- ContractCreateEventsKafkaProducer.make[IO](kafka.contractsCreatedTopic, kafka.producerProps.bootstrapServers.head)
+      schemasConsumer   <- SchemasKafkaConsumerImpl.make[IO](NonEmptyList.one(kafka.schemasTopic), consumerSettings, service, contractsProducer)
+      gitClient         <- GitHubClient.make[IO](contractConfig.owner, contractConfig.repo, contractConfig.path,
+        contractConfig.baseBranch, client, Some(contractConfig.token))
+      gitService        <- GitHubService.make[IO](service, gitClient)
+      contractsConsumer <- ContractsKafkaConsumerImpl.make[IO](
+                              NonEmptyList.fromListUnsafe(List(kafka.contractsCreatedTopic, kafka.contractsDeletedTopic)),
+                              contractsConsumerSettings, gitService
+                           )
+      handler           <- ContractsHandler.make[IO](repo, gitClient)
+    yield (schemasConsumer, contractsConsumer)).use {
+      case (sc, cc) =>
+        logger.info("Starting contracts registry") >> {
+          for
+            _ <- sc.process().start
+            _ <- cc.process().start
+          yield ()
+        }
     }.as(ExitCode.Success)

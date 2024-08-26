@@ -5,7 +5,7 @@ import http.client.HttpClient
 import client.schemaregistry.DeleteSchemaClientImpl
 import dto.errors.HttpErrorDTO
 import dto.schema.*
-
+import domain.{Version, Versions}
 import cats.data.EitherT
 import cats.effect.{Async, Resource}
 

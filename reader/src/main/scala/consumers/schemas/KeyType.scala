@@ -1,5 +1,5 @@
 package io.github.sergeiionin.contractsregistrator
-package schemaregistry
+package consumers.schemas
 
 import io.circe.{Encoder, Decoder}
 
