@@ -2,7 +2,7 @@ package io.github.sergeiionin.contractsregistrator
 package client.schemaregistry
 
 import client.schemaregistry.{ResponseMixin, SchemaRegistryPaths}
-
+import domain.{Version, Versions}
 import client.DeleteSchemaClient
 import dto.errors.HttpErrorDTO
 import dto.schema.*
