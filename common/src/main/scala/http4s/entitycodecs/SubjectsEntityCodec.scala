@@ -1,7 +1,7 @@
 package io.github.sergeiionin.contractsregistrator
 package http4s.entitycodecs
 
-import dto.schema.Subjects
+import domain.Subjects
 
 import cats.effect.Concurrent
 import org.http4s.circe.{jsonEncoderOf, jsonOf}
