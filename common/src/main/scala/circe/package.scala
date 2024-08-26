@@ -10,3 +10,8 @@ package object circe:
         parser.parse(r).flatMap(json => {
           json.as[R]
         })
+  
+  def parseArray[R: Decoder](raw: Array[Byte]): Either[Error, R] =
+    parser.parse(new String(raw)).flatMap(json => {
+      json.as[R]
+    })
