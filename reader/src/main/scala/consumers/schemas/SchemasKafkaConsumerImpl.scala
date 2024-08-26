@@ -9,6 +9,7 @@ import cats.effect.{Async, Resource}
 import fs2.kafka.{CommittableConsumerRecord, ConsumerSettings, Deserializer, KafkaConsumer}
 import io.circe.{parser, Error as circeError}
 import consumers.KafkaEventsConsumer
+import service.ContractService
 import org.typelevel.log4cats.Logger
 import KeyType.*
 import producer.EventsProducer
@@ -20,6 +21,7 @@ import io.circe.Error as CirceError
 final class SchemasKafkaConsumerImpl[F[_] : Async : Logger](
                                                     topics: NonEmptyList[String],
                                                     kafkaConsumer: KafkaConsumer[F, Bytes, Bytes],
+                                                    contractService: ContractService[F],       
                                                     contractsProducer: EventsProducer[F, ContractCreateRequestedKey, ContractCreateRequested]       
                                                   ) extends KafkaEventsConsumer[F, Bytes, Bytes](kafkaConsumer):
   import circe.parseRaw
@@ -49,10 +51,10 @@ final class SchemasKafkaConsumerImpl[F[_] : Async : Logger](
         .drain  
   
   private def deleteContractVersion(subject: String, version: Int): F[Unit] =
-    ().pure[F] // fixme implement    
+    contractService.deleteContractVersion(subject, version)    
   
   private def deleteContract(subject: String): F[Unit] =
-    ().pure[F] // fixme implement    
+    contractService.deleteContract(subject)    
   
   private def createContractVersion(subject: String, version: Int): F[Unit] =
     contractsProducer
