@@ -9,7 +9,8 @@ import io.circe.parser.*
 import io.circe.generic.auto.*
 import io.circe.generic.semiauto.*
 import io.circe.{Encoder, Decoder}
-import schemaregistry.KeyType.*
+import consumers.schemas.KeyType
+import consumers.schemas.KeyType.*
 
 class KeyTypeSpec extends AnyWordSpec with Matchers:
   "KeyType" should {
