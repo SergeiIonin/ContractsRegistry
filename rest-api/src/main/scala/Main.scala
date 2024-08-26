@@ -6,7 +6,7 @@ import domain.events.contracts.{ContractDeleteRequested, ContractDeleteRequested
 import domain.events.prs.{PrClosed, PrClosedKey, given}
 import http.client.HttpClient
 import producer.EventsProducer
-import producer.contracts.ContractEventsKafkaProducer
+import producer.contracts.ContractDeleteEventsKafkaProducer
 import producer.prs.PrEventsKafkaProducer
 import serverendpoints.{CreateContractServerEndpoints, DeleteContractServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
 
@@ -19,6 +19,7 @@ import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
 import sttp.tapir.server.http4s.Http4sServerInterpreter
+import producer.EventsKafkaProducer.given
 
 object Main extends IOApp:
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -39,7 +40,7 @@ object Main extends IOApp:
       httpClient                      <- HttpClient.make[IO]()
       createSchemaClient              <- CreateSchemaClient.make[IO](baseClientUri, httpClient)
       kafkaPrsProducer                <- PrEventsKafkaProducer.make[IO](prsTopic, bootstrapServers)
-      kafkaContractsProducer          <- ContractEventsKafkaProducer.make[IO](contractsDeletedTopic, bootstrapServers)
+      kafkaContractsProducer          <- ContractDeleteEventsKafkaProducer.make[IO](contractsDeletedTopic, bootstrapServers)
       createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient)
       deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](kafkaContractsProducer)
       webhooksServerEndpoints         = WebhooksPrsServerEndpoints[IO](kafkaPrsProducer)
