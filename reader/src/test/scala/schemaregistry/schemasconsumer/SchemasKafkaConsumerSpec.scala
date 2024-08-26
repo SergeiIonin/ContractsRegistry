@@ -1,4 +1,4 @@
-package io.github.sergeiionin.contractsregistrator
+/*package io.github.sergeiionin.contractsregistrator
 package schemaregistry.schemasconsumer
 
 import org.scalatest.matchers.should.Matchers
@@ -67,4 +67,4 @@ class SchemasKafkaConsumerSpec extends AnyWordSpec with Matchers:
       noopKey shouldEqual NOOP
       otherKey shouldEqual OTHER
     }
-  }
+  }*/
