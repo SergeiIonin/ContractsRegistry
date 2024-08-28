@@ -1,16 +1,15 @@
 package io.github.sergeiionin.contractsregistrator
 package consumers
 
+import circe.codecs.domain.events.contracts.ContractEventCodec.given
+import circe.codecs.domain.events.contracts.ContractEventKeyCodec.given
+import circe.parseArray
+import domain.events.contracts.*
+
+import cats.data.NonEmptyList
 import cats.effect.Async
 import fs2.kafka.{Deserializer, KafkaConsumer}
-import cats.data.NonEmptyList
-import domain.events.contracts.{ContractEventKey, ContractEvent, ContractCreateRequested, ContractCreateRequestedKey, ContractDeleteRequested, ContractDeleteRequestedKey}
-import domain.events.contracts.ContractEventKey.given
-import domain.events.contracts.ContractEvent.given
-import circe.parseArray
-import io.circe.Decoder
-
-import io.circe.Error as CirceError
+import io.circe.{Decoder, Error as CirceError}
 
 abstract class KafkaEventsConsumer[F[_], K, V](kafkaConsumer: KafkaConsumer[F, K, V]) extends Consumer[F]:
   override def subscribe(topics: NonEmptyList[String]): F[Unit] =
@@ -30,8 +29,7 @@ object KafkaEventsConsumer:
   given deserializerContractEvent[F[_] : Async]: Deserializer[F, ContractEvent] =
     Deserializer.lift(event => fromEither(event))
   
-  // fixme rm it?
-  /*given deserializerContractCreateRequestedKey[F[_] : Async]: Deserializer[F, ContractCreateRequestedKey] =
+  given deserializerContractCreateRequestedKey[F[_] : Async]: Deserializer[F, ContractCreateRequestedKey] =
     Deserializer.lift(key => fromEither(key))
 
   given deserializerContractCreateRequested[F[_] : Async]: Deserializer[F, ContractCreateRequested] =
@@ -41,4 +39,4 @@ object KafkaEventsConsumer:
     Deserializer.lift(key => fromEither(key))
 
   given deserializerContractDeleteRequested[F[_] : Async]: Deserializer[F, ContractDeleteRequested] =
-    Deserializer.lift(event => fromEither(event))*/
+    Deserializer.lift(event => fromEither(event))
