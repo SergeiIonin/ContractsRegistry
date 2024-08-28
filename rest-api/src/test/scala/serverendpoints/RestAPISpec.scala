@@ -4,11 +4,12 @@ package serverendpoints
 import client.DeleteSchemaClient
 import client.schemaregistry.{CreateSchemaClientImpl, DeleteSchemaClientImpl}
 import config.RestApiApplicationConfig
-import dto.errors.HttpErrorDTO
+import domain.events.contracts.{ContractDeletedEvent, ContractDeletedEventKey}
 import dto.*
+import dto.errors.HttpErrorDTO
 import endpoints.{BaseContractsEndpoint, ContractEndpoint}
 import http.client.HttpClientTestImpl
-import producer.TestContractsEventsProducer
+import producer.{EventsProducer, TestContractsEventsProducer}
 
 import cats.effect.IO
 import cats.effect.testing.specs2.CatsEffect
@@ -36,8 +37,8 @@ class RestAPISpec extends Specification with CatsEffect with SchemasHelper with 
   import http4s.entitycodecs.CreateSchemaDtoEntityCodec.given
   import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
 
-  import SchemasHelper.given
   import RestAPISpec.*
+  import SchemasHelper.given
   import io.circe.Encoder
   import io.circe.generic.semiauto
 
@@ -292,7 +293,7 @@ object RestAPISpec:
   val createSchemaClient = CreateSchemaClientImpl[IO](baseClientUri, httpClient)
   val deleteSchemaClient = DeleteSchemaClientImpl[IO](baseClientUri, httpClient)
   
-  val contractsProducer = TestContractsEventsProducer[IO]()
+  val contractsProducer: EventsProducer[IO, ContractDeletedEventKey, ContractDeletedEvent] = TestContractsEventsProducer[IO]()
   
   val createContractServerEndpoints = CreateContractServerEndpoints[IO](createSchemaClient)
   val deleteContractServerEndpoints = DeleteContractServerEndpoints[IO](contractsProducer)

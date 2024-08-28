@@ -4,7 +4,6 @@ package service
 import dto.SubjectAndVersionDTO
 import dto.errors.{HttpErrorDTO, InternalServerErrorDTO}
 import repository.ContractStatusRepository
-import serverendpoints.webhooks.ContractStatusService
 
 import cats.data.EitherT
 import cats.effect.{Async, Resource}
