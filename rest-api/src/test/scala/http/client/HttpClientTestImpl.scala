@@ -1,32 +1,28 @@
 package io.github.sergeiionin.contractsregistrator
 package http.client
 
-import cats.Monad
-import cats.syntax.applicative.*
-import org.http4s.{Response, Status, Uri}
-import org.http4s.EntityEncoder
-import io.circe.{Decoder, Encoder}
-import org.http4s.circe.jsonEncoderOf
 import domain.Contract
+import dto.errors.HttpErrorDTO
 import dto.schema.{CreateSchemaDTO, CreateSchemaResponseDTO}
 
+import cats.Monad
 import cats.data.EitherT
-import io.github.sergeiionin.contractsregistrator.dto.errors.HttpErrorDTO
+import cats.syntax.applicative.*
+import io.circe.{Decoder, Encoder}
+import org.http4s.circe.jsonEncoderOf
+import org.http4s.{EntityEncoder, Response, Status, Uri}
 
 import scala.collection.immutable.::
-// todo use MockSchemaRegistryClient
-/*import io.confluent.kafka.schemaregistry.client.MockSchemaRegistryClient
-import io.confluent.kafka.schemaregistry.ParsedSchema
-import io.confluent.kafka.schemaregistry.client.SchemaRegistryClient*/
 
 
 final class HttpClientTestImpl[F[_] : Monad]() extends HttpClient[F]:
-  import HttpClientTestImpl.given
+  import http.client.HttpClient.*
   import http.client.extensions.*
   import http4s.entitycodecs.CreateSchemaDtoEntityCodec.given
   import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
   import http4s.entitycodecs.SchemaDtoEntityCodec.given
-  import http.client.HttpClient.*
+
+  import HttpClientTestImpl.given
 
   private val storage = TestSchemaStorage()
   
