@@ -37,7 +37,7 @@ final class GitHubServiceImpl[F[_] : Concurrent : Logger](
       fileSha      <- gitHubClient.getContractSha(fileName)
       newCommitSha <- gitHubClient.deleteContract(subject, version, fileSha, branch)
       _            <- gitHubClient.updateBranchRef(branch, newCommitSha)
-      contractPR   =  ContractPullRequest(subject, version, isDeleted = false)
+      contractPR   =  ContractPullRequest(subject, version, isDeleted = true)
       _            <- logger.info(s"deleting the file $fileName")
       _            <- gitHubClient.createPR(contractPR.getTitle(), contractPR.getBody(), branch)
     yield ()
