@@ -9,8 +9,8 @@ import domain.events.contracts.{ContractEvent, ContractEventKey}
 import domain.{Contract, SubjectAndVersion}
 import github.{GitHubClient, GitHubService}
 import handler.ContractsHandler
-import producer.EventsKafkaProducer.given
-import producer.contracts.ContractCreateEventsKafkaProducer
+import producer.KafkaEventsProducer.given
+import producer.contracts.ContractCreateKafkaEventsProducer
 import repository.ContractsRepository
 import service.ContractService
 
@@ -41,20 +41,6 @@ object Main extends IOApp:
     
     given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
 
-    def parseRaw[R : Decoder](raw: Option[String]): Either[circe.Error, R] =
-      raw match
-        case None => Left(circe.DecodingFailure("Record is empty", List.empty))
-        case Some(r) => 
-          parser.parse(r).flatMap(json => {
-          json.as[R]
-        })
-    
-    def toContract(recordRaw: Option[String]): Either[circe.Error, Contract] =
-      parseRaw[Contract](recordRaw)
-    
-    def toSubjectAndVersion(recordRaw: Option[String]): Either[circe.Error, SubjectAndVersion] =
-      parseRaw[SubjectAndVersion](recordRaw)
-    
     given Deserializer[IO, Bytes] = Deserializer.lift(bs => IO.pure(Bytes(bs)))
     
     val consumerSettings =
@@ -79,7 +65,7 @@ object Main extends IOApp:
       repo              <- ContractsRepository.make[IO](session)
       service           <- ContractService.make[IO](repo)
       client            <- EmberClientBuilder.default[IO].build
-      contractsProducer <- ContractCreateEventsKafkaProducer.make[IO](kafka.contractsCreatedTopic, kafka.producerProps.bootstrapServers.head)
+      contractsProducer <- ContractCreateKafkaEventsProducer.make[IO](kafka.contractsCreatedTopic, kafka.producerProps.bootstrapServers.head)
       schemasConsumer   <- SchemasKafkaConsumerImpl.make[IO](NonEmptyList.one(kafka.schemasTopic), consumerSettings, service, contractsProducer)
       gitClient         <- GitHubClient.make[IO](contractConfig.owner, contractConfig.repo, contractConfig.path,
         contractConfig.baseBranch, client, Some(contractConfig.token))
