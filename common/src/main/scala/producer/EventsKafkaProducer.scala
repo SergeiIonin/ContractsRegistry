@@ -1,14 +1,20 @@
 package io.github.sergeiionin.contractsregistrator
 package producer
 
-import domain.events.contracts.{ContractCreateRequestedKey, ContractCreateRequested,
-  ContractDeleteRequestedKey, ContractDeleteRequested}
+import domain.events.contracts.{
+  ContractCreateRequestedKey, ContractCreateRequested,
+  ContractDeleteRequestedKey, ContractDeleteRequested,
+  ContractDeletedEventKey, ContractDeletedEvent,
+  ContractEventKey, ContractEvent
+}
 import cats.effect.Async
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
 import cats.syntax.applicative.*
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerSettings, Serializer}
 import io.circe.syntax.*
+import domain.events.contracts.ContractEventKey.given
+import domain.events.contracts.ContractEvent.given
 
 abstract class EventsKafkaProducer[F[_] : Async, K, V]() extends EventsProducer[F, K, V]:
   def kafkaProducer: KafkaProducer[F, K, V]
@@ -23,14 +29,20 @@ object EventsKafkaProducer:
       Serializer.apply[F, V],
     ).withBootstrapServers(bootstrapServers)
   
+  given serializerContractEventKey[F[_] : Async]: Serializer[F, ContractEventKey] =
+    Serializer.lift(key => key.asJson.noSpaces.getBytes.pure[F])
+    
+  given serializerContractEvent[F[_] : Async]: Serializer[F, ContractEvent] =
+    Serializer.lift(key => key.asJson.noSpaces.getBytes.pure[F])
+
   given serializerContractCreateRequestedKey[F[_] : Async]: Serializer[F, ContractCreateRequestedKey] =
     Serializer.lift(key => key.asJson.noSpaces.getBytes.pure[F])
 
   given serializerContractCreateRequested[F[_] : Async]: Serializer[F, ContractCreateRequested] =
     Serializer.lift(event => event.asJson.noSpaces.getBytes.pure[F])
 
-  given serializerContractDeleteRequestedKey[F[_] : Async]: Serializer[F, ContractDeleteRequestedKey] =
+  given serializerContractDeleteRequestedKey[F[_] : Async]: Serializer[F, ContractDeletedEventKey] =
     Serializer.lift(key => key.asJson.noSpaces.getBytes.pure[F])
-  
-  given serializerContractDeleteRequested[F[_] : Async]: Serializer[F, ContractDeleteRequested] =
+
+  given serializerContractDeleteRequested[F[_] : Async]: Serializer[F, ContractDeletedEvent] =
     Serializer.lift(event => event.asJson.noSpaces.getBytes.pure[F])
