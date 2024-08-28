@@ -2,12 +2,14 @@ package io.github.sergeiionin.contractsregistrator
 package handler
 
 import repository.PostgresHelper
+
 import com.dimafeng.testcontainers.scalatest.TestContainerForAll
 import org.scalatest.wordspec.AnyWordSpec
 import domain.Contract
 import domain.SchemaType.PROTOBUF
-import github.{GitHubClient, GitHubClientTestImpl}
+import github.{GitHubClient, GitHubClientTest, GitHubClientTestImpl}
 import repository.{ContractsRepository, PostgresHelper}
+
 import cats.effect.{IO, Resource}
 import cats.effect.unsafe.implicits.global
 import com.dimafeng.testcontainers.{Container, ForAllTestContainer, PostgreSQLContainer}
@@ -22,7 +24,7 @@ import skunk.*
 import skunk.codec.all.*
 import skunk.implicits.*
 
-// fixme when this test is run through sbt, a container don't shutdown
+// fixme move to GitHubServiceSpec
 class ContractsHandlerSpec extends AnyWordSpec with Matchers with TestContainerForAll with PostgresHelper[IO]:
   import ContractsHandlerSpec.given
 
@@ -59,7 +61,7 @@ class ContractsHandlerSpec extends AnyWordSpec with Matchers with TestContainerF
           session <- sessionPooledResource(psqlContainer)
           _ <- Resource.eval(initPostgres(session))
           repo <- ContractsRepository.make[IO](session)
-          gitClient <- GitHubClient.test[IO]()
+          gitClient <- GitHubClientTest.test[IO]()
           handler <- ContractsHandler.make[IO](repo, gitClient)
         yield (handler, repo)).use { (h: ContractsHandler[IO], r: ContractsRepository[IO]) => {
           for
