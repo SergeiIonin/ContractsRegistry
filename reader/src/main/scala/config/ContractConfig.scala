@@ -5,6 +5,7 @@ import pureconfig.*
 import pureconfig.generic.derivation.default.*
 import com.typesafe.config.ConfigFactory
 
+// fixme give it a better name
 final case class ContractConfig(
                            owner: String,
                            repo: String,
@@ -16,4 +17,3 @@ final case class ContractConfig(
 object ContractConfig:
   def load =
     ConfigSource.fromConfig(ConfigFactory.load("application.conf")).at("contract").loadOrThrow[ContractConfig]
-    //ConfigSource.default.loadOrThrow[ContractConfig]
