@@ -2,27 +2,39 @@ package io.github.sergeiionin.contractsregistrator
 package domain.events.contracts
 
 import domain.Contract
-import domain.events.{Event, Key}
+import domain.events.Event
+
 import io.circe.{Decoder, Encoder}
+import io.circe.derivation.{Configuration, ConfiguredDecoder, ConfiguredEncoder}
 
-sealed trait ContractEventKey extends Key
 sealed trait ContractEvent extends Event
+object ContractEvent:
+  given config: Configuration = Configuration.default.withDiscriminator("type")
+  
+  given encoderContractEvent: Encoder[ContractEvent] = ConfiguredEncoder.derived[ContractEvent]
+  given decoderContractEvent: Decoder[ContractEvent] = ConfiguredDecoder.derived[ContractEvent]
+  
+  given encoderCreateRequested: Encoder[ContractCreateRequested] =
+    ConfiguredEncoder.derived[ContractCreateRequested]
+  given decoderCreateRequested: Decoder[ContractCreateRequested] =
+    ConfiguredDecoder.derived[ContractCreateRequested]
 
-final case class ContractDeleteRequestedKey(
-                                             subject: String,
-                                             version: Option[Int]
-                                           ) extends ContractEventKey derives Encoder, Decoder
-final case class ContractDeleteRequested(
-                                          subject: String,
-                                          version: Option[Int],
-                                          deleteSubject: Boolean = false
-                                        ) extends ContractEvent derives Encoder, Decoder
+  given encoderDeleteEvent: Encoder[ContractDeletedEvent] =
+    ConfiguredEncoder.derived[ContractDeletedEvent]
+  given decoderDeleteEvent: Decoder[ContractDeletedEvent] =
+    ConfiguredDecoder.derived[ContractDeletedEvent]  
 
-final case class ContractCreateRequestedKey(
-                                             subject: String,
-                                             version: Int
-                                           ) extends ContractEventKey derives Encoder, Decoder
 final case class ContractCreateRequested(
                                           contract: Contract
-                                        ) extends ContractEvent derives Encoder, Decoder
+                                        ) extends ContractEvent
 
+sealed trait ContractDeletedEvent extends ContractEvent
+
+final case class ContractDeleteRequested(
+                                          subject: String,
+                                        ) extends ContractDeletedEvent
+
+final case class ContractVersionDeleteRequested(
+                                                 subject: String,
+                                                 version: Int,
+                                               ) extends ContractDeletedEvent
