@@ -5,6 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import io.circe.syntax.*
 import io.circe.parser.decode
+import circe.codecs.domain.ContractCodec.given
 
 class ContractSpec extends AnyWordSpec with Matchers:
   "Contract" should {
