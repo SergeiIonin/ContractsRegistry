@@ -6,7 +6,6 @@ import consumers.contracts.ContractsKafkaConsumerImpl
 import consumers.schemas.KeyType.*
 import consumers.schemas.{KeyType, SchemasKafkaConsumerImpl}
 import domain.events.contracts.{ContractEvent, ContractEventKey}
-import domain.events.prs.{PrClosed, PrClosedKey}
 import domain.{Contract, SubjectAndVersion}
 import github.{GitHubClient, GitHubService}
 import handler.ContractsHandler
@@ -18,6 +17,7 @@ import service.ContractService
 import cats.data.NonEmptyList
 import cats.effect.{ExitCode, IO, IOApp}
 import cats.syntax.option.*
+import cats.syntax.parallel.*
 import fs2.kafka.{ConsumerSettings, Deserializer, KafkaConsumer}
 import io.circe
 import io.circe.syntax.given
@@ -71,28 +71,7 @@ object Main extends IOApp:
           Deserializer.apply[IO, ContractEventKey],
           Deserializer.apply[IO, ContractEvent]
         )
-        .withProperties(consumerProps)  
-    
-    def processEventRecord(key: String,
-                           recordOpt: Option[String],
-                           handler: ContractsHandler[IO]): IO[Unit] =
-      def updateOrDeleteContract(subject: String, version: Int, isMerged: Boolean): IO[Unit] =
-        val title = s"PR for $subject:$version"
-        if isMerged then
-          logger.info(s"$title was merged") >>
-            handler.updateIsMergedStatus(subject, version)
-        else
-          logger.info(s"$title was rejected") >>
-            handler.deleteContractVersion(subject, version)
-      
-      val prClosedKey = parseRaw[PrClosedKey](key.some)
-      val prClosed = parseRaw[PrClosed](recordOpt)
-      for
-        key      <- IO.fromEither[PrClosedKey](prClosedKey)
-        pr       <- IO.fromEither[PrClosed](prClosed)
-        isMerged = pr.isMerged
-        _        <- updateOrDeleteContract(key.subject, key.version, isMerged)
-      yield ()
+        .withProperties(consumerProps)
     
     (for
       session           <- Session.pooled[IO](host = postgres.host, port = postgres.port, user = postgres.user,
@@ -109,13 +88,9 @@ object Main extends IOApp:
                               NonEmptyList.fromListUnsafe(List(kafka.contractsCreatedTopic, kafka.contractsDeletedTopic)),
                               contractsConsumerSettings, gitService
                            )
-      handler           <- ContractsHandler.make[IO](repo, gitClient)
     yield (schemasConsumer, contractsConsumer)).use {
       case (sc, cc) =>
         logger.info("Starting contracts registry") >> {
-          for
-            _ <- sc.process().start
-            _ <- cc.process().start
-          yield ()
+          (sc.process(), cc.process()).parTupled
         }
     }.as(ExitCode.Success)
