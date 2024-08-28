@@ -1,10 +1,11 @@
 package io.github.sergeiionin.contractsregistrator
 package endpoints
 
-import dto.github.webhooks.{PrWebhookRequestDTO, PrWebhookResponseDTO, PrErrorDTO, BadRequestErrorDTO}
+import dto.github.webhooks.{PrWebhookRequestDTO, PrWebhookResponseDTO}
 import sttp.model.StatusCode
 import sttp.tapir.*
 import sttp.tapir.json.circe.*
+import dto.errors.{HttpErrorDTO, BadRequestDTO}
 
 trait WebhooksEndpoints:
   given PullRequestDtoSchema: Schema[PrWebhookRequestDTO] = Schema.derived[PrWebhookRequestDTO]
@@ -14,8 +15,8 @@ trait WebhooksEndpoints:
     .in("webhooks") // for tests w/ ngrok free plan, hide this and next lines  as subdomains won't be supported 
     .in("prs")
     .errorOut(
-        oneOf[PrErrorDTO](
-          oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequestErrorDTO])
+        oneOf[HttpErrorDTO](
+          oneOfVariant(StatusCode.BadRequest, jsonBody[BadRequestDTO])
         )
     )
   
