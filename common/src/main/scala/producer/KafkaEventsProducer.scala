@@ -1,28 +1,24 @@
 package io.github.sergeiionin.contractsregistrator
 package producer
 
-import domain.events.contracts.{
-  ContractCreateRequestedKey, ContractCreateRequested,
-  ContractDeleteRequestedKey, ContractDeleteRequested,
-  ContractDeletedEventKey, ContractDeletedEvent,
-  ContractEventKey, ContractEvent
-}
+import circe.codecs.domain.events.contracts.ContractEventCodec.given
+import circe.codecs.domain.events.contracts.ContractEventKeyCodec.given
+import domain.events.contracts.*
+
 import cats.effect.Async
+import cats.syntax.applicative.*
 import cats.syntax.flatMap.*
 import cats.syntax.functor.*
-import cats.syntax.applicative.*
 import fs2.kafka.{KafkaProducer, ProducerRecord, ProducerSettings, Serializer}
 import io.circe.syntax.*
-import domain.events.contracts.ContractEventKey.given
-import domain.events.contracts.ContractEvent.given
 
-abstract class EventsKafkaProducer[F[_] : Async, K, V]() extends EventsProducer[F, K, V]:
+abstract class KafkaEventsProducer[F[_] : Async, K, V]() extends EventsProducer[F, K, V]:
   def kafkaProducer: KafkaProducer[F, K, V]
   
   override def produce(key: K, value: V): F[Unit] =
     kafkaProducer.produceOne(ProducerRecord(this.topic, key, value)).flatten.void
 
-object EventsKafkaProducer:  
+object KafkaEventsProducer:  
   def producerSettings[F[_], K, V](bootstrapServers: String)(using Serializer[F, K], Serializer[F, V]): ProducerSettings[F, K, V] =
     ProducerSettings[F, K, V](
       Serializer.apply[F, K],
