@@ -4,9 +4,9 @@ import client.{CreateSchemaClient, DeleteSchemaClient}
 import config.RestApiApplicationConfig
 import domain.events.contracts.{ContractDeleteRequested, ContractDeleteRequestedKey}
 import http.client.HttpClient
-import producer.EventsKafkaProducer.given
+import producer.KafkaEventsProducer.given
 import producer.EventsProducer
-import producer.contracts.ContractDeleteEventsKafkaProducer
+import producer.contracts.ContractDeleteKafkaEventsProducer
 import repository.ContractStatusRepository
 import serverendpoints.{CreateContractServerEndpoints, DeleteContractServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
 
@@ -53,7 +53,7 @@ object Main extends IOApp:
       contractStatusRepository        <- ContractStatusRepository.make[IO](session)
       contractStatusService           <- ContractStatusService.make[IO](contractStatusRepository)
       prsService                      <- PrService.make[IO](contractStatusService, deleteSchemaClient)
-      kafkaContractsProducer          <- ContractDeleteEventsKafkaProducer.make[IO](contractsDeletedTopic, bootstrapServers)
+      kafkaContractsProducer          <- ContractDeleteKafkaEventsProducer.make[IO](contractsDeletedTopic, bootstrapServers)
       createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient)
       deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](kafkaContractsProducer)
       webhooksServerEndpoints         = WebhooksPrsServerEndpoints[IO](prsService)
