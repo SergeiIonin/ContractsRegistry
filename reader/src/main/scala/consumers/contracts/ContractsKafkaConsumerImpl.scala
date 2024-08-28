@@ -28,15 +28,13 @@ class ContractsKafkaConsumerImpl[F[_] : Async : Logger](
         .stream
         .evalMap { cr =>
           logger.info(s"Processing contract event: ${cr}") >> {
-            // fixme are cases unreachable?
-            cr match
-              case cr: CommittableConsumerRecord[F, ContractCreateRequestedKey, ContractCreateRequested] =>
-                val contract = cr.record.value.contract
-                gitHubService.addContract(contract)
-              case cr: CommittableConsumerRecord[F, ContractVersionDeleteRequestedKey, ContractVersionDeleteRequested] =>
-                gitHubService.deleteContractVersion(cr.record.value.subject, cr.record.value.version)
-              case cr: CommittableConsumerRecord[F, ContractDeleteRequestedKey, ContractDeleteRequested] =>
-                gitHubService.deleteContract(cr.record.value.subject)
+            cr.record.value match
+              case contractCreated: ContractCreateRequested =>
+                gitHubService.addContract(contractCreated.contract)
+              case contractVersionDeleted: ContractVersionDeleteRequested =>
+                gitHubService.deleteContractVersion(contractVersionDeleted.subject, contractVersionDeleted.version)
+              case contractDeleted: ContractDeleteRequested =>
+                gitHubService.deleteContract(contractDeleted.subject)
           }  
         }
         .compile
