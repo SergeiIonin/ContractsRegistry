@@ -1,11 +1,10 @@
 package io.github.sergeiionin.contractsregistrator
-package domain
-package events
+package circe.codecs.events.contracts
 
 import domain.events.contracts.*
-import domain.events.contracts.ContractEvent.given
-import domain.events.contracts.ContractEventKey.given
 import domain.{Contract, SchemaType}
+import io.github.sergeiionin.contractsregistrator.circe.codecs.domain.events.contracts.ContractEventCodec.given 
+import io.github.sergeiionin.contractsregistrator.circe.codecs.domain.events.contracts.ContractEventKeyCodec.given 
 
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -17,7 +16,7 @@ class ContractEventSpec extends AnyWordSpec with Matchers:
     "encode and decode ContractCreateRequestedKey correctly" in {
       val key: ContractCreateRequestedKey = ContractCreateRequestedKey("subject1", 1)
       val json = key.asJson.noSpaces
-      val decodedKey = decode[ContractCreateRequestedKey](json)
+      val decodedKey = decode[ContractEventKey](json)
       decodedKey shouldBe Right(key)
     }
 
@@ -40,19 +39,19 @@ class ContractEventSpec extends AnyWordSpec with Matchers:
     "encode and decode ContractCreateRequested correctly" in {
       val event: ContractCreateRequested = ContractCreateRequested(Contract("subject1", 1, 1, "schema1", SchemaType.PROTOBUF, false, None))
       val json = event.asJson.noSpaces
-      val decodedEvent = decode[ContractCreateRequested](json)
+      val decodedEvent = decode[ContractEvent](json)
       decodedEvent shouldBe Right(event)
     }
 
     "encode and decode ContractDeleteRequested correctly" in {
-      val event: ContractDeletedEvent = ContractDeleteRequested("subject2")
+      val event = ContractDeleteRequested("subject2")
       val json = event.asJson.noSpaces
       val decodedEvent = decode[ContractDeletedEvent](json)
       decodedEvent shouldBe Right(event)
     }
 
     "encode and decode ContractVersionDeleteRequested correctly" in {
-      val event: ContractDeletedEvent = ContractVersionDeleteRequested("subject3", 2)
+      val event = ContractVersionDeleteRequested("subject3", 2)
       val json = event.asJson.noSpaces
       val decodedEvent = decode[ContractDeletedEvent](json)
       decodedEvent shouldBe Right(event)
