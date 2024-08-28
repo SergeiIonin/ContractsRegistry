@@ -5,6 +5,8 @@ import cats.effect.Async
 import fs2.kafka.{Deserializer, KafkaConsumer}
 import cats.data.NonEmptyList
 import domain.events.contracts.{ContractEventKey, ContractEvent, ContractCreateRequested, ContractCreateRequestedKey, ContractDeleteRequested, ContractDeleteRequestedKey}
+import domain.events.contracts.ContractEventKey.given
+import domain.events.contracts.ContractEvent.given
 import circe.parseArray
 import io.circe.Decoder
 
@@ -16,15 +18,20 @@ abstract class KafkaEventsConsumer[F[_], K, V](kafkaConsumer: KafkaConsumer[F, K
 
 object KafkaEventsConsumer:
   private def fromEither[F[_] : Async, R : Decoder](raw: Array[Byte]): F[R] =
-    Async[F].fromEither(parseArray(raw))
+    val res = parseArray(raw)
+    res match 
+      case Left(err) => println(s"error parsing msg: ${err.getMessage}")
+      case Right(_) => ()
+    Async[F].fromEither(res)
   
   given deserializerContractEventKey[F[_] : Async]: Deserializer[F, ContractEventKey] =
-    summon[Deserializer[F, ContractEventKey]]
+    Deserializer.lift(key => fromEither(key))
     
   given deserializerContractEvent[F[_] : Async]: Deserializer[F, ContractEvent] =
-    summon[Deserializer[F, ContractEvent]]
+    Deserializer.lift(event => fromEither(event))
   
-  given deserializerContractCreateRequestedKey[F[_] : Async]: Deserializer[F, ContractCreateRequestedKey] =
+  // fixme rm it?
+  /*given deserializerContractCreateRequestedKey[F[_] : Async]: Deserializer[F, ContractCreateRequestedKey] =
     Deserializer.lift(key => fromEither(key))
 
   given deserializerContractCreateRequested[F[_] : Async]: Deserializer[F, ContractCreateRequested] =
@@ -34,4 +41,4 @@ object KafkaEventsConsumer:
     Deserializer.lift(key => fromEither(key))
 
   given deserializerContractDeleteRequested[F[_] : Async]: Deserializer[F, ContractDeleteRequested] =
-    Deserializer.lift(event => fromEither(event))
+    Deserializer.lift(event => fromEither(event))*/
