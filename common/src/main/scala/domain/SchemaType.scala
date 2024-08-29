@@ -8,6 +8,7 @@ enum SchemaType derives Schema:
   case AVRO, JSON, PROTOBUF, OTHER
 
 object SchemaType:
+  // fixme should return Either
   def fromString(s: String): SchemaType = 
     s match
       case "AVRO" => AVRO

@@ -13,3 +13,4 @@ object Versions:
 
 extension (versions: Versions)
   def headOption: Option[Int] = versions.headOption
+  def max: Int = versions.max
