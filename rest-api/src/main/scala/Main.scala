@@ -56,7 +56,7 @@ object Main extends IOApp:
       prsService                      <- PrService.make[IO](contractService, getSchemaClient, deleteSchemaClient)
       deleteKafkaEventsProducer       <- ContractDeleteKafkaEventsProducer.make[IO](contractsDeletedTopic, bootstrapServers)
       createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient)
-      deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](deleteKafkaEventsProducer)
+      deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](getSchemaClient, deleteKafkaEventsProducer)
       webhooksServerEndpoints         = WebhooksPrsServerEndpoints[IO](prsService)
       serverEndpoints                 = createContractsServerEndpoints.serverEndpoints ++
                                           deleteContractsServerEndpoints.serverEndpoints ++
