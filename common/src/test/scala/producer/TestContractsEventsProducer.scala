@@ -4,8 +4,8 @@ package producer
 import cats.Applicative
 import cats.syntax.applicative.*
 import producer.EventsProducer
-import domain.events.contracts.{ContractDeletedEventKey, ContractDeletedEvent}
+import domain.events.contracts.{ContractEventKey, ContractEvent}
 
-class TestContractsEventsProducer[F[_] : Applicative] extends EventsProducer[F, ContractDeletedEventKey, ContractDeletedEvent]:
-  override val topic: String = "events_contracts_deleted"
-  override def produce(key: ContractDeletedEventKey, value: ContractDeletedEvent): F[Unit] = ().pure[F]
+abstract class TestContractsEventsProducer[F[_] : Applicative, K <: ContractEventKey, V <: ContractEvent] extends EventsProducer[F, K, V]:
+  override val topic: String = "events_contracts"
+  override def produce(key: K, value: V): F[Unit] = ().pure[F]
