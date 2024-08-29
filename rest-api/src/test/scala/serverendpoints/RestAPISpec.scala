@@ -2,7 +2,7 @@ package io.github.sergeiionin.contractsregistrator
 package serverendpoints
 
 import client.DeleteSchemaClient
-import client.schemaregistry.{CreateSchemaClientImpl, DeleteSchemaClientImpl}
+import client.schemaregistry.{CreateSchemaClientImpl, GetSchemaClientImpl, DeleteSchemaClientImpl}
 import config.RestApiApplicationConfig
 import domain.events.contracts.{ContractDeletedEvent, ContractDeletedEventKey}
 import dto.*
@@ -290,13 +290,14 @@ object RestAPISpec:
   val httpClient = HttpClientTestImpl.make[IO]()
   val schemasClient = CreateSchemaClientImpl(baseClientUri, httpClient)
 
+  val getSchemaClient = GetSchemaClientImpl[IO](baseClientUri, httpClient)
   val createSchemaClient = CreateSchemaClientImpl[IO](baseClientUri, httpClient)
   val deleteSchemaClient = DeleteSchemaClientImpl[IO](baseClientUri, httpClient)
   
   val contractsProducer: EventsProducer[IO, ContractDeletedEventKey, ContractDeletedEvent] = TestContractsEventsProducer[IO]()
   
   val createContractServerEndpoints = CreateContractServerEndpoints[IO](createSchemaClient)
-  val deleteContractServerEndpoints = DeleteContractServerEndpoints[IO](contractsProducer)
+  val deleteContractServerEndpoints = DeleteContractServerEndpoints[IO](getSchemaClient, contractsProducer)
 
   val nameToServerEndpoint = (createContractServerEndpoints.serverEndpoints ++
                                   deleteContractServerEndpoints.serverEndpoints)
