@@ -1,29 +1,29 @@
 package io.github.sergeiionin.contractsregistrator
 
-import client.{CreateSchemaClient, DeleteSchemaClient}
+import client.{CreateSchemaClient, GetSchemaClient, DeleteSchemaClient}
 import config.RestApiApplicationConfig
 import domain.events.contracts.{ContractDeleteRequested, ContractDeleteRequestedKey}
 import http.client.HttpClient
-import producer.KafkaEventsProducer.given
 import producer.EventsProducer
+import producer.KafkaEventsProducer.given
 import producer.contracts.ContractDeleteKafkaEventsProducer
-import repository.ContractStatusRepository
+import repository.ContractsRepository
 import serverendpoints.{CreateContractServerEndpoints, DeleteContractServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
+import service.prs.PrService
+import service.ContractService
 
-import cats.syntax.option.*
 import cats.effect.{ExitCode, IO, IOApp}
+import cats.syntax.option.*
 import com.comcast.ip4s.{Host, Port, port}
 import fs2.kafka.{KafkaProducer, ProducerSettings, Serializer}
 import io.circe.syntax.*
-import io.github.sergeiionin.contractsregistrator.service.ContractStatusService
-import io.github.sergeiionin.contractsregistrator.service.prs.PrService
+import natchez.Trace.Implicits.noop
 import org.http4s.ember.client.EmberClientBuilder
 import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.slf4j.Slf4jLogger
 import org.typelevel.log4cats.{Logger, LoggerFactory}
-import sttp.tapir.server.http4s.Http4sServerInterpreter
 import skunk.Session
-import natchez.Trace.Implicits.noop
+import sttp.tapir.server.http4s.Http4sServerInterpreter
 
 object Main extends IOApp:
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]
@@ -49,13 +49,14 @@ object Main extends IOApp:
                                                             password = postgres.password.some, max = 10)
       httpClient                      <- HttpClient.make[IO]()
       createSchemaClient              <- CreateSchemaClient.make[IO](baseClientUri, httpClient)
+      getSchemaClient                 <- GetSchemaClient.make[IO](baseClientUri, httpClient)
       deleteSchemaClient              <- DeleteSchemaClient.make[IO](baseClientUri, httpClient)
-      contractStatusRepository        <- ContractStatusRepository.make[IO](session)
-      contractStatusService           <- ContractStatusService.make[IO](contractStatusRepository)
-      prsService                      <- PrService.make[IO](contractStatusService, deleteSchemaClient)
-      kafkaContractsProducer          <- ContractDeleteKafkaEventsProducer.make[IO](contractsDeletedTopic, bootstrapServers)
+      contractsRepository             <- ContractsRepository.make[IO](session)
+      contractService                 <- ContractService.make[IO](contractsRepository)
+      prsService                      <- PrService.make[IO](contractService, getSchemaClient, deleteSchemaClient)
+      deleteKafkaEventsProducer       <- ContractDeleteKafkaEventsProducer.make[IO](contractsDeletedTopic, bootstrapServers)
       createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient)
-      deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](kafkaContractsProducer)
+      deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](deleteKafkaEventsProducer)
       webhooksServerEndpoints         = WebhooksPrsServerEndpoints[IO](prsService)
       serverEndpoints                 = createContractsServerEndpoints.serverEndpoints ++
                                           deleteContractsServerEndpoints.serverEndpoints ++
