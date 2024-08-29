@@ -17,6 +17,7 @@ sealed trait ContractDeletedEvent extends ContractEvent
 
 final case class ContractDeleteRequested(
                                           subject: String,
+                                          versions: List[Int]
                                         ) extends ContractDeletedEvent
 
 final case class ContractVersionDeleteRequested(

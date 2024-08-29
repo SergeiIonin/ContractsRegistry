@@ -1,5 +1,6 @@
 package io.github.sergeiionin
 
+// fixme rename to contractsregistry
 package object contractsregistrator:
   opaque type Bytes = Array[Byte]
   object Bytes:

@@ -29,7 +29,8 @@ object ContractEventCodec:
   (c: ContractDeleteRequested) =>
     Json.obj(
       "type" -> Json.fromString("ContractDeleteRequested"),
-      "subject" -> Json.fromString(c.subject)
+      "subject" -> Json.fromString(c.subject),
+      "versions" -> Json.fromValues(c.versions.map(Json.fromInt))
     )
   given decoderContractDeleteRequested: Decoder[ContractDeleteRequested] =
     ConfiguredDecoder.derived[ContractDeleteRequested]
