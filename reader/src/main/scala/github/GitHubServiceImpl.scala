@@ -1,18 +1,18 @@
 package io.github.sergeiionin.contractsregistrator
 package github
 
-import cats.Monad
+import cats.{Monad, Parallel}
 import cats.syntax.functor.*
 import cats.syntax.flatMap.*
+import cats.syntax.parallel.*
 import cats.effect.{Concurrent, Resource}
 import domain.{Contract, ContractPullRequest}
-import service.ContractService
 import github.GitHubClient
+
 import org.typelevel.log4cats.Logger
 
-final class GitHubServiceImpl[F[_] : Concurrent : Logger](
+final class GitHubServiceImpl[F[_] : Concurrent : Parallel : Logger](
                                               gitHubClient: GitHubClient[F],
-                                              contractService: ContractService[F]
                                             ) extends GitHubService[F]:
   private val logger = summon[Logger[F]]
 
@@ -48,13 +48,7 @@ final class GitHubServiceImpl[F[_] : Concurrent : Logger](
   override def deleteContractVersion(subject: String, version: Int): F[Unit] =
     deleteContractPR(subject, version)
 
-  override def deleteContract(subject: String): F[Unit] =
-    for
-      versions <- contractService.getContractVersions(subject)
-      _        <- versions
-                    .parEvalMapUnordered(10)(version =>
-                      deleteContractVersion(subject, version)
-                    )
-                    .compile
-                    .drain
-    yield ()
+  override def deleteContract(subject: String, versions: List[Int]): F[Unit] =
+    versions.parTraverse { version =>
+      deleteContractVersion(subject, version)
+    }.void
