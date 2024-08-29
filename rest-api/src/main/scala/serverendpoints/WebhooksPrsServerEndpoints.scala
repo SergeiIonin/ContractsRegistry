@@ -3,15 +3,15 @@ package serverendpoints
 
 import domain.ContractPullRequest
 import dto.*
-import dto.errors.{HttpErrorDTO, BadRequestDTO}
+import dto.errors.{BadRequestDTO, HttpErrorDTO}
 import dto.github.webhooks.PrWebhookResponseDTO
 import endpoints.WebhooksEndpoints
 import producer.EventsProducer
 import service.ContractService
+import service.prs.PrService
 
 import cats.effect.Async
 import cats.syntax.all.*
-import io.github.sergeiionin.contractsregistrator.service.prs.PrService
 import org.typelevel.log4cats.Logger
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
@@ -25,7 +25,8 @@ class WebhooksPrsServerEndpoints[F[_] : Async : Logger](
     pullRequest.serverLogic(pr => {
       val isMerged = pr.pull_request.merged
       val body = pr.pull_request.body
-      val contractPullRequest = ContractPullRequest.fromRaw(body, isMerged)
+      val isDeleted = pr.pull_request.title.toLowerCase.startsWith("delete")
+      val contractPullRequest = ContractPullRequest.fromRaw(body, isDeleted)
 
       contractPullRequest match
         case Left(err) => 
