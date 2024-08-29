@@ -7,7 +7,6 @@ import com.typesafe.config.ConfigFactory
 
 final case class ApplicationConfig(
                                     kafka: KafkaConfig,
-                                    postgres: PostgresConfig,
                                     contract: ContractConfig
                                   ) derives ConfigReader
 

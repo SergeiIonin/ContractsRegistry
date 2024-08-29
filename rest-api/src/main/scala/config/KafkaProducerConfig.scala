@@ -5,7 +5,7 @@ import pureconfig.*
 import pureconfig.generic.derivation.default.*
 
 final case class KafkaProducerConfig(
-                                    prsTopic: String,
                                     contractsDeletedTopic: String,
+                                    contractsCreatedTopic: String,
                                     bootstrapServers: List[String],
                                     ) derives ConfigReader

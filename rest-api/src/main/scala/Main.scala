@@ -1,14 +1,14 @@
 package io.github.sergeiionin.contractsregistrator
 
-import client.{CreateSchemaClient, GetSchemaClient, DeleteSchemaClient}
+import client.{CreateSchemaClient, DeleteSchemaClient, GetSchemaClient}
 import config.RestApiApplicationConfig
 import domain.events.contracts.{ContractDeleteRequested, ContractDeleteRequestedKey}
 import http.client.HttpClient
 import producer.EventsProducer
 import producer.KafkaEventsProducer.given
-import producer.contracts.ContractDeleteKafkaEventsProducer
+import producer.contracts.{ContractCreateKafkaEventsProducer, ContractDeleteKafkaEventsProducer}
 import repository.ContractsRepository
-import serverendpoints.{CreateContractServerEndpoints, GetContractServerEndpoints, DeleteContractServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
+import serverendpoints.{CreateContractServerEndpoints, DeleteContractServerEndpoints, GetContractServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
 import service.prs.PrService
 import service.ContractService
 
@@ -36,6 +36,7 @@ object Main extends IOApp:
   val postgres = config.postgres
 
   val contractsDeletedTopic = config.kafkaProducer.contractsDeletedTopic
+  val contractsCreatedTopic = config.kafkaProducer.contractsCreatedTopic
   
   val bootstrapServers = config.kafkaProducer.bootstrapServers.head
   
@@ -53,7 +54,8 @@ object Main extends IOApp:
       contractService                 <- ContractService.make[IO](contractsRepository)
       prsService                      <- PrService.make[IO](contractService, getSchemaClient, deleteSchemaClient)
       deleteKafkaEventsProducer       <- ContractDeleteKafkaEventsProducer.make[IO](contractsDeletedTopic, bootstrapServers)
-      createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient)
+      createKafkaEventsProducer       <- ContractCreateKafkaEventsProducer.make[IO](contractsCreatedTopic, bootstrapServers)
+      createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient, getSchemaClient, createKafkaEventsProducer)
       getContractsServerEndpoints     = GetContractServerEndpoints[IO](contractService)
       deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](getSchemaClient, deleteKafkaEventsProducer)
       webhooksServerEndpoints         = WebhooksPrsServerEndpoints[IO](prsService)

@@ -7,6 +7,6 @@ final case class Contract(
                          id: Int,
                          schema: String,
                          schemaType: SchemaType,
-                         isMerged: Boolean = false,
-                         deleted: Option[Boolean] = None
+                         isMerged: Boolean = false, // fixme rm it
+                         deleted: Option[Boolean] = None // fixme rm it
 )
