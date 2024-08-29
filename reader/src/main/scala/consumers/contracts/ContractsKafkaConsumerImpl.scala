@@ -34,7 +34,7 @@ class ContractsKafkaConsumerImpl[F[_] : Async : Logger](
               case contractVersionDeleted: ContractVersionDeleteRequested =>
                 gitHubService.deleteContractVersion(contractVersionDeleted.subject, contractVersionDeleted.version)
               case contractDeleted: ContractDeleteRequested =>
-                gitHubService.deleteContract(contractDeleted.subject)
+                gitHubService.deleteContract(contractDeleted.subject, contractDeleted.versions)
           }  
         }
         .compile
