@@ -15,6 +15,7 @@ trait ContractService[F[_]]:
   def getContractVersions(subject: String): F[fs2.Stream[F, Int]]
   def getSubjects(): F[fs2.Stream[F, String]]
   def getLatestContract(subject: String): F[Option[Contract]]
+  def updateIsMerged(subject: String, version: Int): F[Unit]
   def deleteContractVersion(subject: String, version: Int): F[Unit]
   def deleteContract(subject: String): F[Unit]
 

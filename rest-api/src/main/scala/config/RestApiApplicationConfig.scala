@@ -8,6 +8,7 @@ import pureconfig.generic.derivation.default.*
 final case class RestApiApplicationConfig(
                                     restApi: RestApiConfig,
                                     schemaRegistry: SchemaRegistryConfig,
+                                    postgres: PostgresConfig,
                                     kafkaProducer: KafkaProducerConfig,
                                   ) derives ConfigReader
 

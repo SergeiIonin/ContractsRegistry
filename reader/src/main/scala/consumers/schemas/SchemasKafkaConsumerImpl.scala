@@ -16,6 +16,8 @@ import producer.EventsProducer
 import consumers.Consumer
 import domain.events.contracts.{ContractCreateRequestedKey, ContractCreateRequested}
 import domain.{Contract, SubjectAndVersion}
+import circe.codecs.domain.ContractCodec.given
+import circe.codecs.domain.SubjectAndVersionCodec.given
 import io.circe.Error as CirceError
 
 final class SchemasKafkaConsumerImpl[F[_] : Async : Logger](

@@ -6,6 +6,8 @@ import domain.Contract
 import cats.syntax.*
 import cats.syntax.applicativeError.*
 import cats.{Monad, MonadThrow}
+import cats.effect.{Async, Resource}
+import org.typelevel.log4cats.Logger
 
 import scala.collection.mutable
 import scala.util.Random
@@ -59,3 +61,7 @@ final class GitHubClientTestImpl[F[_] : Monad : MonadThrow] extends GitHubClient
     
     def createPR(title: String, body: String, head: String): F[Unit] = 
       Monad[F].pure(())
+
+object GitHubClientTest:
+  def test[F[_] : Async : Logger]() =
+    Resource.pure[F, GitHubClient[F]](GitHubClientTestImpl[F])

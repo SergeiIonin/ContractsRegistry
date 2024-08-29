@@ -22,6 +22,3 @@ object GitHubClient:
   def make[F[_]: Async: Logger](owner: String, repo: String, path: String,
                                 baseBranch: String, client: Client[F], token: Option[String]) =
     Resource.pure[F, GitHubClient[F]](new GitHubClientImpl(owner, repo, path, baseBranch, client, token))
-  
-  def test[F[_] : Async : Logger]() =
-    Resource.pure[F, GitHubClient[F]](GitHubClientTestImpl[F])

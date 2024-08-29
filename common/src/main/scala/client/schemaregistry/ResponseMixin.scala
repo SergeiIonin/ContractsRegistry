@@ -23,5 +23,5 @@ trait ResponseMixin[F[_] : Async]:
     } else if (responseBad(response)) {
       BadRequestDTO(response.status.code, errorMsg).toLeftEitherT[R]
     } else {
-      InternalServerErrorDTO().toLeftEitherT[R]
+      InternalServerErrorDTO(msg = "").toLeftEitherT[R]
     }

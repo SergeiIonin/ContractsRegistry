@@ -1,10 +1,14 @@
 package io.github.sergeiionin.contractsregistrator
-package consumers.contracts
+package consumers
+package contracts
 
 import cats.syntax.flatMap.*
 import consumers.Consumer
 import consumers.KafkaEventsConsumer
-import domain.events.contracts.{ContractCreateRequested, ContractCreateRequestedKey, ContractDeleteRequested, ContractDeleteRequestedKey, ContractEvent, ContractEventKey}
+import domain.events.contracts.{ContractCreateRequestedKey, ContractCreateRequested,
+  ContractVersionDeleteRequestedKey, ContractVersionDeleteRequested,
+  ContractDeleteRequestedKey, ContractDeleteRequested,
+  ContractEventKey, ContractEvent}
 import github.{GitHubClient, GitHubService}
 import cats.effect.{Async, Resource}
 import cats.data.NonEmptyList
@@ -16,19 +20,22 @@ class ContractsKafkaConsumerImpl[F[_] : Async : Logger](
                                         gitHubService: GitHubService[F],
                                         kafkaConsumer: KafkaConsumer[F, ContractEventKey, ContractEvent]
                                       ) extends KafkaEventsConsumer[F, ContractEventKey, ContractEvent](kafkaConsumer):
+  private val logger = summon[Logger[F]]
+  
   override def process(): F[Unit] = 
     subscribe(topics) >>
       kafkaConsumer
         .stream
-        .evalMap {
-          case cr: CommittableConsumerRecord[F, ContractCreateRequestedKey, ContractCreateRequested] =>
-            val contract = cr.record.value.contract
-            gitHubService.addContract(contract)
-          case cr: CommittableConsumerRecord[F, ContractDeleteRequestedKey, ContractDeleteRequested] =>
-            val deleteSubject = cr.record.value.deleteSubject
-            if deleteSubject then
-              gitHubService.deleteContract(cr.record.value.subject)
-            else gitHubService.deleteContractVersion(cr.record.value.subject, cr.record.value.version.get) // fixme avoid .get!
+        .evalMap { cr =>
+          logger.info(s"Processing contract event: ${cr}") >> {
+            cr.record.value match
+              case contractCreated: ContractCreateRequested =>
+                gitHubService.addContract(contractCreated.contract)
+              case contractVersionDeleted: ContractVersionDeleteRequested =>
+                gitHubService.deleteContractVersion(contractVersionDeleted.subject, contractVersionDeleted.version)
+              case contractDeleted: ContractDeleteRequested =>
+                gitHubService.deleteContract(contractDeleted.subject)
+          }  
         }
         .compile
         .drain
