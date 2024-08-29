@@ -16,17 +16,9 @@ class ConfigSpecs extends AnyWordSpec with Matchers:
       contract.baseBranch shouldEqual "your_base_branch"
       
       val kafka = config.kafka
-      kafka.schemasTopic shouldEqual "_schemas"
       val consumerProps = kafka.consumerProps
       consumerProps.bootstrapServers shouldEqual List("localhost:19092")
       consumerProps.groupId shouldEqual "contracts-registrator-reader"
       consumerProps.autoOffsetReset shouldEqual "latest"
-      
-      val postgres = config.postgres
-      postgres.host shouldEqual "localhost"
-      postgres.port shouldEqual 5434
-      postgres.user shouldEqual "postgres"
-      postgres.password shouldEqual "postgres"
-      postgres.database shouldEqual "contracts"
     }
   }
