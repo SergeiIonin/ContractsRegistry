@@ -4,7 +4,7 @@ package serverendpoints
 import client.DeleteSchemaClient
 import client.schemaregistry.{CreateSchemaClientImpl, DeleteSchemaClientImpl, GetSchemaClientImpl}
 import config.RestApiApplicationConfig
-import domain.events.contracts.{ContractDeletedEvent, ContractDeletedEventKey}
+import domain.events.contracts.{ContractCreateRequestedKey, ContractCreateRequested, ContractDeletedEvent, ContractDeletedEventKey}
 import domain.{Contract, SchemaType}
 import dto.*
 import dto.errors.HttpErrorDTO
@@ -302,11 +302,14 @@ object RestAPISpec:
   val deleteSchemaClient = DeleteSchemaClientImpl[IO](baseClientUri, httpClient)
   
   val contractService = ContractServiceTestImpl[IO]()
-  val contractsProducer: EventsProducer[IO, ContractDeletedEventKey, ContractDeletedEvent] = TestContractsEventsProducer[IO]()
+  val contractsDeleteEventsProducer: EventsProducer[IO, ContractDeletedEventKey, ContractDeletedEvent] =
+    new TestContractsEventsProducer[IO, ContractDeletedEventKey, ContractDeletedEvent](){}
+  val contractsCreateEventsProducer: EventsProducer[IO, ContractCreateRequestedKey, ContractCreateRequested] = 
+    new TestContractsEventsProducer[IO, ContractCreateRequestedKey, ContractCreateRequested](){}
   
   val getContractServerEndpoints    = GetContractServerEndpoints[IO](contractService)
-  val createContractServerEndpoints = CreateContractServerEndpoints[IO](createSchemaClient)
-  val deleteContractServerEndpoints = DeleteContractServerEndpoints[IO](getSchemaClient, contractsProducer)
+  val createContractServerEndpoints = CreateContractServerEndpoints[IO](createSchemaClient, getSchemaClient, contractsCreateEventsProducer)
+  val deleteContractServerEndpoints = DeleteContractServerEndpoints[IO](getSchemaClient, contractsDeleteEventsProducer)
 
   val nameToServerEndpoint = (createContractServerEndpoints.serverEndpoints ++
                                   getContractServerEndpoints.serverEndpoints ++
