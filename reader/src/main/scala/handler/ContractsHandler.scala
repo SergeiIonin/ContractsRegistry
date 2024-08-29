@@ -7,7 +7,7 @@ import repository.ContractsRepository
 import github.GitHubClient
 
 import org.typelevel.log4cats.Logger
-
+// fixme move test functionality to GitHubServiceSpec and rm it
 trait ContractsHandler[F[_]]:
   def addContract(contract: Contract): F[Unit]
   // set isMerged for contract to true
