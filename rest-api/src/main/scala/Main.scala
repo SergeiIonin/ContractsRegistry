@@ -8,7 +8,7 @@ import producer.EventsProducer
 import producer.KafkaEventsProducer.given
 import producer.contracts.ContractDeleteKafkaEventsProducer
 import repository.ContractsRepository
-import serverendpoints.{CreateContractServerEndpoints, DeleteContractServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
+import serverendpoints.{CreateContractServerEndpoints, GetContractServerEndpoints, DeleteContractServerEndpoints, SwaggerServerEndpoints, WebhooksPrsServerEndpoints}
 import service.prs.PrService
 import service.ContractService
 
@@ -35,8 +35,6 @@ object Main extends IOApp:
 
   val postgres = config.postgres
 
-
-  val prsTopic = config.kafkaProducer.prsTopic
   val contractsDeletedTopic = config.kafkaProducer.contractsDeletedTopic
   
   val bootstrapServers = config.kafkaProducer.bootstrapServers.head
@@ -56,15 +54,18 @@ object Main extends IOApp:
       prsService                      <- PrService.make[IO](contractService, getSchemaClient, deleteSchemaClient)
       deleteKafkaEventsProducer       <- ContractDeleteKafkaEventsProducer.make[IO](contractsDeletedTopic, bootstrapServers)
       createContractsServerEndpoints  = CreateContractServerEndpoints[IO](createSchemaClient)
+      getContractsServerEndpoints     = GetContractServerEndpoints[IO](contractService)
       deleteContractsServerEndpoints  = DeleteContractServerEndpoints[IO](getSchemaClient, deleteKafkaEventsProducer)
       webhooksServerEndpoints         = WebhooksPrsServerEndpoints[IO](prsService)
       serverEndpoints                 = createContractsServerEndpoints.serverEndpoints ++
-                                          deleteContractsServerEndpoints.serverEndpoints ++
+                                            getContractsServerEndpoints.serverEndpoints ++
+                                            deleteContractsServerEndpoints.serverEndpoints ++
                                             webhooksServerEndpoints.serverEndpoints
       swaggerServerEndpoints          = SwaggerServerEndpoints[IO](
                                                 createContractsServerEndpoints.getEndpoints ++
-                                                  deleteContractsServerEndpoints.getEndpoints ++
-                                                    webhooksServerEndpoints.getEndpoints
+                                                getContractsServerEndpoints.getEndpoints ++ 
+                                                deleteContractsServerEndpoints.getEndpoints ++
+                                                webhooksServerEndpoints.getEndpoints
                                         ).getSwaggerUIServerEndpoints()
       routes                          = Http4sServerInterpreter[IO]().toRoutes(serverEndpoints ++ swaggerServerEndpoints)
       server                          <- EmberServerBuilder
