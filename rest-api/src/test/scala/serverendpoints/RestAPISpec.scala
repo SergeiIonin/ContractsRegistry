@@ -2,14 +2,16 @@ package io.github.sergeiionin.contractsregistrator
 package serverendpoints
 
 import client.DeleteSchemaClient
-import client.schemaregistry.{CreateSchemaClientImpl, DeleteSchemaClientImpl}
+import client.schemaregistry.{CreateSchemaClientImpl, DeleteSchemaClientImpl, GetSchemaClientImpl}
 import config.RestApiApplicationConfig
 import domain.events.contracts.{ContractDeletedEvent, ContractDeletedEventKey}
+import domain.{Contract, SchemaType}
 import dto.*
 import dto.errors.HttpErrorDTO
 import endpoints.{BaseContractsEndpoint, ContractEndpoint}
 import http.client.HttpClientTestImpl
 import producer.{EventsProducer, TestContractsEventsProducer}
+import service.ContractServiceTestImpl
 
 import cats.effect.IO
 import cats.effect.testing.specs2.CatsEffect
@@ -49,11 +51,16 @@ class RestAPISpec extends Specification with CatsEffect with SchemasHelper with 
   def addContracts(subject: String): IO[Unit] =
       (for
         _ <- createSchemaClient.createSchema(subject, schemaDTOv1)
+        _ <- contractService.saveContract(Contract(subject, 1, 1, schemaV1, SchemaType.PROTOBUF, true, false.some))
         _ <- createSchemaClient.createSchema(subject, schemaDTOv2)
+        _ <- contractService.saveContract(Contract(subject, 2, 2, schemaV2, SchemaType.PROTOBUF, true, false.some))
       yield ()).value.void
 
   def deleteContractsForSubject(subject: String): IO[Unit] =
-      deleteSchemaClient.deleteSchemaSubject(subject).value.void
+    (for 
+      _ <- deleteSchemaClient.deleteSchemaSubject(subject)
+      _ <- contractService.deleteContract(subject)
+    yield ()).value.void
 
   "createContract" should {
     val backendCreateContractStub =
@@ -97,7 +104,7 @@ class RestAPISpec extends Specification with CatsEffect with SchemasHelper with 
     }
   }
   
-/*  "getContractVersion" should {
+  "getContractVersion" should {
     val backendGetContractVersionStub =
       TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
         .whenServerEndpoint(getContractVersionServerEndpoint)
@@ -125,8 +132,8 @@ class RestAPISpec extends Specification with CatsEffect with SchemasHelper with 
     }
     // todo add 400 case
   }
-*/  
-/*  "getVersions" should {
+  
+  "getVersions" should {
     val backendGetVersionsStub =
       TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
         .whenServerEndpoint(getVersionsServerEndpoint)
@@ -165,8 +172,8 @@ class RestAPISpec extends Specification with CatsEffect with SchemasHelper with 
       yield true
     }
   }
-*/  
-/*  "getSubjects" should {
+  
+  "getSubjects" should {
     val backendGetSubjectsStub =
       TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
         .whenServerEndpoint(getSubjectsServerEndpoint)
@@ -190,8 +197,8 @@ class RestAPISpec extends Specification with CatsEffect with SchemasHelper with 
       yield true
     }
   }
-*/  
-/*  "getLatestContract" should {
+  
+  "getLatestContract" should {
     val backendGetLatestContractStub =
       TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
         .whenServerEndpoint(getLatestContractServerEndpoint)
@@ -230,7 +237,7 @@ class RestAPISpec extends Specification with CatsEffect with SchemasHelper with 
       yield true
     }
   }
-*/
+
   "deleteContractVersion" should {
     val backendDeleteContractVersionStub =
       TapirStubInterpreter(SttpBackendStub(new CatsMonadError[IO]()))
@@ -290,17 +297,21 @@ object RestAPISpec:
   val httpClient = HttpClientTestImpl.make[IO]()
   val schemasClient = CreateSchemaClientImpl(baseClientUri, httpClient)
 
+  val getSchemaClient = GetSchemaClientImpl[IO](baseClientUri, httpClient)
   val createSchemaClient = CreateSchemaClientImpl[IO](baseClientUri, httpClient)
   val deleteSchemaClient = DeleteSchemaClientImpl[IO](baseClientUri, httpClient)
   
+  val contractService = ContractServiceTestImpl[IO]()
   val contractsProducer: EventsProducer[IO, ContractDeletedEventKey, ContractDeletedEvent] = TestContractsEventsProducer[IO]()
   
+  val getContractServerEndpoints    = GetContractServerEndpoints[IO](contractService)
   val createContractServerEndpoints = CreateContractServerEndpoints[IO](createSchemaClient)
-  val deleteContractServerEndpoints = DeleteContractServerEndpoints[IO](contractsProducer)
+  val deleteContractServerEndpoints = DeleteContractServerEndpoints[IO](getSchemaClient, contractsProducer)
 
   val nameToServerEndpoint = (createContractServerEndpoints.serverEndpoints ++
-                                  deleteContractServerEndpoints.serverEndpoints)
-                                    .map(se => se.info.name.get -> se).toMap
+                                  getContractServerEndpoints.serverEndpoints ++
+                                    deleteContractServerEndpoints.serverEndpoints)
+                                      .map(se => se.info.name.get -> se).toMap
 
   val createContractServerEndpoint = nameToServerEndpoint(ContractEndpoint.CreateContract.toString)
     .asInstanceOf[Full[Unit, Unit, CreateContractDTO, HttpErrorDTO, CreateContractResponseDTO, Any, IO]]
@@ -311,7 +322,7 @@ object RestAPISpec:
   val deleteContractSubjectServerEndpoint = nameToServerEndpoint(ContractEndpoint.DeleteContractSubject.toString)
     .asInstanceOf[Full[Unit, Unit, String, HttpErrorDTO, DeleteContractResponseDTO, Any, IO]]
 
-  /*val getContractVersionServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetContractVersion.toString)
+  val getContractVersionServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetContractVersion.toString)
     .asInstanceOf[Full[Unit, Unit, (String, Int), HttpErrorDTO, ContractDTO, Any, IO]]
 
   val getVersionsServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetVersions.toString)
@@ -321,4 +332,4 @@ object RestAPISpec:
     .asInstanceOf[Full[Unit, Unit, Unit, HttpErrorDTO, List[String], Any, IO]]
   
   val getLatestContractServerEndpoint = nameToServerEndpoint(ContractEndpoint.GetLatestContract.toString)
-    .asInstanceOf[Full[Unit, Unit, String, HttpErrorDTO, ContractDTO, Any, IO]]*/
+    .asInstanceOf[Full[Unit, Unit, String, HttpErrorDTO, ContractDTO, Any, IO]]

@@ -14,6 +14,7 @@ import github.GitHubClient
 
 import org.typelevel.log4cats.Logger
 
+// fixme rm it
 class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepository[F],
                                                   gitClient: GitHubClient[F]) extends ContractsHandler[F]:
   private val logger = summon[Logger[F]]

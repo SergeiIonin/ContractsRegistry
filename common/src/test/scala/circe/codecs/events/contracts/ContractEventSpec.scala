@@ -44,7 +44,7 @@ class ContractEventSpec extends AnyWordSpec with Matchers:
     }
 
     "encode and decode ContractDeleteRequested correctly" in {
-      val event = ContractDeleteRequested("subject2")
+      val event = ContractDeleteRequested("subject2", List(1, 2, 3))
       val json = event.asJson.noSpaces
       val decodedEvent = decode[ContractDeletedEvent](json)
       decodedEvent shouldBe Right(event)

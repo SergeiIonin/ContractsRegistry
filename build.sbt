@@ -4,7 +4,7 @@ import sbt.Resolver
 lazy val commonSettings = Seq(
   organization := "io.github.sergeiionin",
   scalaVersion := "3.4.2",
-  version := "0.3.0",
+  version := "0.4.0",
   autoCompilerPlugins := true,
   idePackagePrefix := Some("io.github.sergeiionin.contractsregistrator"),
   resolvers ++= res,

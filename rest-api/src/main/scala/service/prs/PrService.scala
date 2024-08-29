@@ -1,11 +1,11 @@
 package io.github.sergeiionin.contractsregistrator
 package service.prs
 
-import client.DeleteSchemaClient
+import client.{GetSchemaClient, DeleteSchemaClient}
 import domain.ContractPullRequest
 import dto.SubjectAndVersionDTO
 import dto.errors.HttpErrorDTO
-import service.{ContractService, ContractStatusService}
+import service.ContractService
 
 import cats.Monad
 import cats.data.EitherT
@@ -16,7 +16,8 @@ trait PrService[F[_]]:
 
 object PrService:
   def make[F[_] : Async](
-                          contractStatusService: ContractStatusService[F],
+                          contractService: ContractService[F],
+                          getClient: GetSchemaClient[F],
                           deleteClient: DeleteSchemaClient[F]
                         ): Resource[F, PrService[F]] = 
-    Resource.pure[F, PrService[F]](PrServiceImpl[F](contractStatusService, deleteClient))
+    Resource.pure[F, PrService[F]](PrServiceImpl[F](contractService, getClient, deleteClient))

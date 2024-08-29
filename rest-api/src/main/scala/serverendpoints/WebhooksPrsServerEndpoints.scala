@@ -17,7 +17,7 @@ import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
 
 class WebhooksPrsServerEndpoints[F[_] : Async : Logger](
-                                                         prsService: PrService[F]
+                                                         prsService: PrService[F],
                                                        ) extends WebhooksEndpoints:
   private val logger = summon[Logger[F]]
   
@@ -35,7 +35,7 @@ class WebhooksPrsServerEndpoints[F[_] : Async : Logger](
         case Right(contractPr) =>
           logger.info(s"Received PR: $pr") *> {
             val response = PrWebhookResponseDTO(body, isMerged)
-            if (pr.isClosed) {
+            if (pr.isClosed && !pr.isRejected) {
               prsService.processPR(contractPr).as(response).value
             } else
               response.asRight[HttpErrorDTO].pure[F]

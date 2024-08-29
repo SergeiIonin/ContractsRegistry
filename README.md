@@ -1,5 +1,5 @@
 # ContractsRegistry...4s (WIP)
-![latest version](https://img.shields.io/badge/version-0.3.0-orange)
+![latest version](https://img.shields.io/badge/version-0.4.0-orange)
 ![scala version](https://img.shields.io/badge/scala-3-red)
 
 This project plays a role of onboarding protobuf-based contracts used by the microservices of some platform.
