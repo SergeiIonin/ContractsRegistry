@@ -10,6 +10,7 @@ import org.http4s.AuthScheme.Bearer
 import org.http4s.headers.Authorization.given
 import org.http4s.headers.Accept.given
 
+// todo rename to trait Requests or the like
 object ClientUtils:
   private val acceptHeader = Header.Raw(CIString("Accept"), "application/vnd.github.v3+json")
   private val gitHubApiVersionHeader = Header.Raw(CIString("X-GitHub-Api-Version"), "2022-11-28")
