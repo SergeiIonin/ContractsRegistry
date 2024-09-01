@@ -7,7 +7,7 @@ import sttp.tapir.json.circe.*
 import sttp.tapir.Schema
 import sttp.model.StatusCode
 
-trait CreateContractEndpoints extends BaseContractsEndpoint:
+trait CreateContractEndpoints extends RootContractsEndpoint:
   
   val createContract =
     root.post

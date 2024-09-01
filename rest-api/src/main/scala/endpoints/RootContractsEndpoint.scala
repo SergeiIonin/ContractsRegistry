@@ -6,7 +6,7 @@ import sttp.tapir.*
 import sttp.model.StatusCode
 import sttp.tapir.json.circe.*
 
-trait BaseContractsEndpoint:
+trait RootContractsEndpoint:
   
   def root =
     endpoint

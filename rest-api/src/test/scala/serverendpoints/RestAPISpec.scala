@@ -8,7 +8,7 @@ import domain.events.contracts.{ContractCreateRequestedKey, ContractCreateReques
 import domain.{Contract, SchemaType}
 import dto.*
 import dto.errors.HttpErrorDTO
-import endpoints.{BaseContractsEndpoint, ContractEndpoint}
+import endpoints.{RootContractsEndpoint, ContractEndpoint}
 import http.client.HttpClientTestImpl
 import producer.{EventsProducer, TestContractsEventsProducer}
 import service.ContractServiceTestImpl
@@ -34,7 +34,7 @@ import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
 import sttp.tapir.server.stub.TapirStubInterpreter
 
-class RestAPISpec extends Specification with CatsEffect with SchemasHelper with BaseContractsEndpoint:
+class RestAPISpec extends Specification with CatsEffect with SchemasHelper with RootContractsEndpoint:
   import endpoints.ContractEndpoint.*
   import http4s.entitycodecs.CreateSchemaDtoEntityCodec.given
   import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given

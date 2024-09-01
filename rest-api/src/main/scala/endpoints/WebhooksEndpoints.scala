@@ -12,7 +12,7 @@ trait WebhooksEndpoints:
   
   private val base =
     endpoint
-    .in("webhooks") // for tests w/ ngrok free plan, hide this and next lines  as subdomains won't be supported 
+    .in("webhooks") // for tests w/ ngrok free plan, hide this and next lines as subdomains won't be supported 
     .in("prs")
     .errorOut(
         oneOf[HttpErrorDTO](

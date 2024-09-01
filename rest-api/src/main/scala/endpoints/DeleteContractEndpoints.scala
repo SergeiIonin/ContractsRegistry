@@ -7,7 +7,7 @@ import sttp.tapir.json.circe.*
 import sttp.tapir.Schema
 import sttp.model.StatusCode
 
-trait DeleteContractEndpoints extends BaseContractsEndpoint:
+trait DeleteContractEndpoints extends RootContractsEndpoint:
   
   val deleteContractVersion =
     root.delete
