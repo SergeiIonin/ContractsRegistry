@@ -20,7 +20,7 @@ class ContractPullRequestSpec extends AnyWordSpec with Matchers {
       val pr = ContractPullRequest("testSubject", 1, isDeleted = false)
       pr.getTitle() shouldEqual "Add contract testSubject_1"
     }
-    
+
     "return the correct title for deleted contract in getTitle" in {
       val pr = ContractPullRequest("testSubject", 1, isDeleted = true)
       pr.getTitle() shouldEqual "Delete contract testSubject_1"
@@ -41,7 +41,8 @@ class ContractPullRequestSpec extends AnyWordSpec with Matchers {
     "return an error for an invalid raw string in fromRaw" in {
       val raw = "testSubject:1"
       val pr = ContractPullRequest.fromRaw(raw, isDeleted = false)
-      pr shouldEqual Left(s"Invalid contract pull request format: $raw, the format should be <subject>_<version>")
+      pr shouldEqual Left(
+        s"Invalid contract pull request format: $raw, the format should be <subject>_<version>")
     }
 
     "return an error for a non-integer version in fromRaw" in {

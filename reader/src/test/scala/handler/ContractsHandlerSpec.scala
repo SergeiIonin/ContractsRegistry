@@ -25,7 +25,11 @@ import skunk.codec.all.*
 import skunk.implicits.*
 
 // fixme move to GitHubServiceSpec
-class ContractsHandlerSpec extends AnyWordSpec with Matchers with TestContainerForAll with PostgresHelper[IO]:
+class ContractsHandlerSpec
+    extends AnyWordSpec
+    with Matchers
+    with TestContainerForAll
+    with PostgresHelper[IO]:
   import ContractsHandlerSpec.given
 
   val logger: Logger[IO] = summon[Logger[IO]]
@@ -37,8 +41,10 @@ class ContractsHandlerSpec extends AnyWordSpec with Matchers with TestContainerF
   val testVersion2: Int = testVersion1 + 1
   val testSchema1: String = "testSchema_1"
   val testSchema2: String = "testSchema_2"
-  val testContractV1: Contract = Contract(testSubject, testVersion1, testId1, testSchema1, PROTOBUF)
-  val testContractV2: Contract = Contract(testSubject, testVersion2, testId2, testSchema2, PROTOBUF)
+  val testContractV1: Contract =
+    Contract(testSubject, testVersion1, testId1, testSchema1, PROTOBUF)
+  val testContractV2: Contract =
+    Contract(testSubject, testVersion2, testId2, testSchema2, PROTOBUF)
 
   override val containerDef = PostgreSQLContainer.Def(
     dockerImageName = DockerImageName.parse("postgres:16.3"),
@@ -58,34 +64,36 @@ class ContractsHandlerSpec extends AnyWordSpec with Matchers with TestContainerF
       withContainers { container =>
         val psqlContainer: PostgreSQLContainer = container.asInstanceOf[PostgreSQLContainer]
         (for
-          session <- sessionPooledResource(psqlContainer)
-          _ <- Resource.eval(initPostgres(session))
-          repo <- ContractsRepository.make[IO](session)
+          session   <- sessionPooledResource(psqlContainer)
+          _         <- Resource.eval(initPostgres(session))
+          repo      <- ContractsRepository.make[IO](session)
           gitClient <- GitHubClientTest.test[IO]()
-          handler <- ContractsHandler.make[IO](repo, gitClient)
-        yield (handler, repo)).use { (h: ContractsHandler[IO], r: ContractsRepository[IO]) => {
-          for
-            _ <- h.addContract(testContractV1)
-            _ <- h.addContract(testContractV2)
-            versionsS <- r.getAllVersionsForSubject(testSubject)
-            versions <- versionsS.compile.toList
-            _ <- logger.info(s"versions before deleting: $versions")
-            _ = versions shouldBe List(1, 2)
-            _ <- h.updateIsMergedStatus(testSubject, testVersion2)
-            contractOpt <- r.get(testSubject, testVersion2)
-            _ <- logger.info(s"contract after setting isMerged: $contractOpt")
-            _ = contractOpt.exists(_.isMerged) shouldBe true
-            _ <- h.deleteContract(testSubject)
-            versionsS <- r.getAllVersionsForSubject(testSubject)
-            versions <- versionsS.compile.toList
-            _ = versions shouldBe Nil
-          yield true
-        }
-        }.unsafeRunSync()
+          handler   <- ContractsHandler.make[IO](repo, gitClient)
+        yield (handler, repo))
+          .use { (h: ContractsHandler[IO], r: ContractsRepository[IO]) =>
+            {
+              for
+                _         <- h.addContract(testContractV1)
+                _         <- h.addContract(testContractV2)
+                versionsS <- r.getAllVersionsForSubject(testSubject)
+                versions  <- versionsS.compile.toList
+                _         <- logger.info(s"versions before deleting: $versions")
+                _ = versions shouldBe List(1, 2)
+                _           <- h.updateIsMergedStatus(testSubject, testVersion2)
+                contractOpt <- r.get(testSubject, testVersion2)
+                _           <- logger.info(s"contract after setting isMerged: $contractOpt")
+                _ = contractOpt.exists(_.isMerged) shouldBe true
+                _         <- h.deleteContract(testSubject)
+                versionsS <- r.getAllVersionsForSubject(testSubject)
+                versions  <- versionsS.compile.toList
+                _ = versions shouldBe Nil
+              yield true
+            }
+          }
+          .unsafeRunSync()
       }
     }
   }
-
 
 object ContractsHandlerSpec:
   given logger: Logger[IO] = Slf4jLogger.getLogger[IO]

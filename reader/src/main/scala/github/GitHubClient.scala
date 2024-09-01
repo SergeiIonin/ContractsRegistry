@@ -19,6 +19,12 @@ trait GitHubClient[F[_]]:
   def createPR(title: String, body: String, head: String): F[Unit]
 
 object GitHubClient:
-  def make[F[_]: Async: Logger](owner: String, repo: String, path: String,
-                                baseBranch: String, client: Client[F], token: Option[String]) =
-    Resource.pure[F, GitHubClient[F]](new GitHubClientImpl(owner, repo, path, baseBranch, client, token))
+  def make[F[_]: Async: Logger](
+      owner: String,
+      repo: String,
+      path: String,
+      baseBranch: String,
+      client: Client[F],
+      token: Option[String]) =
+    Resource.pure[F, GitHubClient[F]](
+      new GitHubClientImpl(owner, repo, path, baseBranch, client, token))

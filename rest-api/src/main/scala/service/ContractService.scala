@@ -21,5 +21,6 @@ trait ContractService[F[_]]:
   def deleteContract(subject: String): EitherT[F, HttpErrorDTO, Unit]
 
 object ContractService:
-  def make[F[_] : MonadThrow : Concurrent](contractRepo: ContractsRepository[F]): Resource[F, ContractService[F]] = 
+  def make[F[_]: MonadThrow: Concurrent](
+      contractRepo: ContractsRepository[F]): Resource[F, ContractService[F]] =
     Resource.pure[F, ContractService[F]](ContractServiceImpl[F](contractRepo))

@@ -6,8 +6,8 @@ import sttp.tapir.*
 import sttp.model.StatusCode
 import sttp.tapir.json.circe.*
 
-trait BaseContractsEndpoint:
-  
+trait RootContractsEndpoint:
+
   def root =
     endpoint
       .in(contracts)
@@ -19,13 +19,13 @@ trait BaseContractsEndpoint:
       )
 
   val contracts = "contracts"
-  
+
   val versions = "versions"
-  
+
   val subjects = "subjects"
-  
+
   val latest = "latest"
-  
+
   val `:subject` = path[String]("subject")
-  
+
   val `:version` = path[Int]("version")

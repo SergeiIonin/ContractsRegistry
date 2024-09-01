@@ -19,7 +19,7 @@ class SchemasKafkaConsumerSpec extends AnyWordSpec with Matchers:
     new SchemasConsumer[Id]:
       def subscribe(topics: NonEmptyList[String]): Id[Unit] = ()
       def stream(): fs2.Stream[Id, CommittableConsumerRecord[Id, Bytes, Bytes]] = fs2.Stream.empty
-  
+
   "SchemasKafkaConsumer" should {
     "be able to decode schema key" in {
       val rawKeySchema: String =

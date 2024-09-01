@@ -16,7 +16,7 @@ trait GitHubService[F[_]]:
   def deleteContract(subject: String, versions: List[Int]): F[Unit]
 
 object GitHubService:
-  def make[F[_] : Concurrent : Parallel : Logger](
-                              gitClient: GitHubClient[F]
-                             ): Resource[F, GitHubService[F]] =
+  def make[F[_]: Concurrent: Parallel: Logger](
+      gitClient: GitHubClient[F]
+  ): Resource[F, GitHubService[F]] =
     Resource.pure[F, GitHubService[F]](GitHubServiceImpl[F](gitClient))

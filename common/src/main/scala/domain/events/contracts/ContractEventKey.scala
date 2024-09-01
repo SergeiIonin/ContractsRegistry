@@ -9,17 +9,17 @@ import io.circe.derivation.{Configuration, ConfiguredEncoder, ConfiguredDecoder}
 sealed trait ContractEventKey extends Key
 
 final case class ContractCreateRequestedKey(
-                                             subject: String,
-                                             version: Int
-                                           ) extends ContractEventKey
+    subject: String,
+    version: Int
+) extends ContractEventKey
 
 sealed trait ContractDeletedEventKey extends ContractEventKey
 
 final case class ContractDeleteRequestedKey(
-                                             subject: String,
-                                           ) extends ContractDeletedEventKey
+    subject: String
+) extends ContractDeletedEventKey
 
 final case class ContractVersionDeleteRequestedKey(
-                                                    subject: String,
-                                                    version: Int
-                                                  ) extends ContractDeletedEventKey
+    subject: String,
+    version: Int
+) extends ContractDeletedEventKey

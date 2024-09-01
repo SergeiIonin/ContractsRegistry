@@ -15,35 +15,28 @@ import cats.syntax.flatMap.*
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
 
-class GetContractServerEndpoints[F[_] : Async](service: ContractService[F]) extends GetContractEndpoints:
+class GetContractServerEndpoints[F[_]: Async](service: ContractService[F])
+    extends GetContractEndpoints:
   private val getContractVersionSE: ServerEndpoint[Any, F] =
     getContractVersion.serverLogic((subject, version) => {
-      service
-        .getContractVersion(subject, version)
-        .value
+      service.getContractVersion(subject, version).value
     })
-  
+
   private val getVersionsSE: ServerEndpoint[Any, F] =
     getVersions.serverLogic(subject => {
-      service
-        .getContractVersions(subject)
-        .value
+      service.getContractVersions(subject).value
     })
-  
+
   private val getSubjectsSE: ServerEndpoint[Any, F] =
     getSubjects.serverLogic(_ => {
-      service
-        .getSubjects()
-        .value
+      service.getSubjects().value
     })
-  
+
   private val getLatestContractSE: ServerEndpoint[Any, F] =
     getLatestContract.serverLogic(subject => {
-      service
-        .getLatestContract(subject)
-        .value
+      service.getLatestContract(subject).value
     })
-  
+
   private val getServerEndpoints: List[ServerEndpoint[Any, F]] =
     List(getContractVersionSE, getVersionsSE, getSubjectsSE, getLatestContractSE)
 

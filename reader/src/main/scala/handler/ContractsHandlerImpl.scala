@@ -15,36 +15,39 @@ import github.GitHubClient
 import org.typelevel.log4cats.Logger
 
 // fixme rm it
-class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepository[F],
-                                                  gitClient: GitHubClient[F]) extends ContractsHandler[F]:
+class ContractsHandlerImpl[F[_]: Concurrent: Logger](
+    repository: ContractsRepository[F],
+    gitClient: GitHubClient[F])
+    extends ContractsHandler[F]:
   private val logger = summon[Logger[F]]
-  
+
   def addContractPR(contract: Contract): F[Unit] =
     for
-      latestSha    <- gitClient.getLatestSHA()
-      branch       =  gitClient.getBranchName("add", contract.subject, contract.version)
+      latestSha <- gitClient.getLatestSHA()
+      branch = gitClient.getBranchName("add", contract.subject, contract.version)
       _            <- gitClient.createBranch(latestSha, branch)
       newCommitSha <- gitClient.addContract(contract, branch)
       _            <- gitClient.updateBranchRef(branch, newCommitSha)
-      contractPR   =  ContractPullRequest.fromContract(contract)
-      _            <- logger.info(s"creating a PR for the contract ${contract.subject}:${contract.version}")
-      _            <- gitClient.createPR(contractPR.getTitle(), contractPR.getBody(), branch)
+      contractPR = ContractPullRequest.fromContract(contract)
+      _ <- logger.info(
+        s"creating a PR for the contract ${contract.subject}:${contract.version}")
+      _ <- gitClient.createPR(contractPR.getTitle(), contractPR.getBody(), branch)
     yield ()
 
   def deleteContractPR(subject: String, version: Int): F[Unit] =
     for
-      latestSha    <- gitClient.getLatestSHA()
-      fileName     = gitClient.getFileName(subject, version)
-      branch       = gitClient.getBranchName("delete", subject, version)
+      latestSha <- gitClient.getLatestSHA()
+      fileName = gitClient.getFileName(subject, version)
+      branch = gitClient.getBranchName("delete", subject, version)
       _            <- gitClient.createBranch(latestSha, branch)
       fileSha      <- gitClient.getContractSha(fileName)
       newCommitSha <- gitClient.deleteContract(subject, version, fileSha, branch)
       _            <- gitClient.updateBranchRef(branch, newCommitSha)
-      contractPR   =  ContractPullRequest(subject, version, isDeleted = false)
-      _            <- logger.info(s"deleting the file $fileName")
-      _            <- gitClient.createPR(contractPR.getTitle(), contractPR.getBody(), branch)
+      contractPR = ContractPullRequest(subject, version, isDeleted = false)
+      _ <- logger.info(s"deleting the file $fileName")
+      _ <- gitClient.createPR(contractPR.getTitle(), contractPR.getBody(), branch)
     yield ()
-  
+
   def addContract(contract: Contract): F[Unit] =
     for
       _ <- repository.save(contract)
@@ -53,22 +56,19 @@ class ContractsHandlerImpl[F[_] : Concurrent : Logger](repository: ContractsRepo
 
   def updateIsMergedStatus(subject: String, version: Int): F[Unit] =
     repository.updateIsMerged(subject, version)
-  
+
   def deleteContractVersion(subject: String, version: Int): F[Unit] =
     for
       _ <- repository.delete(subject, version)
       _ <- deleteContractPR(subject, version)
     yield ()
-  
+
   // it's on purpose that we delete the each contract's versions as a separate PR
   def deleteContract(subject: String): F[Unit] =
     for
-     versions <- repository.getAllVersionsForSubject(subject)
-     _              <- versions
-                        .parEvalMapUnordered(10)(version =>
-                          deleteContractVersion(subject, version)
-                        )
-                        .compile
-                        .drain
-     
-    yield ()  
+      versions <- repository.getAllVersionsForSubject(subject)
+      _ <- versions
+        .parEvalMapUnordered(10)(version => deleteContractVersion(subject, version))
+        .compile
+        .drain
+    yield ()

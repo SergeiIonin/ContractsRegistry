@@ -17,21 +17,23 @@ object ContractEventCodec:
     (c: ContractCreateRequested) =>
       Json.obj(
         "type" -> Json.fromString("ContractCreateRequested"),
-        "contract" -> c.contract.asJson,
+        "contract" -> c.contract.asJson
       )
   given decoderCreateRequested: Decoder[ContractCreateRequested] =
     ConfiguredDecoder.derived[ContractCreateRequested]
 
-  given encoderDeleteEvent: Encoder[ContractDeletedEvent] = ConfiguredEncoder.derived[ContractDeletedEvent]
-  given decoderDeleteEvent: Decoder[ContractDeletedEvent] = ConfiguredDecoder.derived[ContractDeletedEvent]
+  given encoderDeleteEvent: Encoder[ContractDeletedEvent] =
+    ConfiguredEncoder.derived[ContractDeletedEvent]
+  given decoderDeleteEvent: Decoder[ContractDeletedEvent] =
+    ConfiguredDecoder.derived[ContractDeletedEvent]
 
   given encoderContractDeleteRequested: Encoder[ContractDeleteRequested] =
-  (c: ContractDeleteRequested) =>
-    Json.obj(
-      "type" -> Json.fromString("ContractDeleteRequested"),
-      "subject" -> Json.fromString(c.subject),
-      "versions" -> Json.fromValues(c.versions.map(Json.fromInt))
-    )
+    (c: ContractDeleteRequested) =>
+      Json.obj(
+        "type" -> Json.fromString("ContractDeleteRequested"),
+        "subject" -> Json.fromString(c.subject),
+        "versions" -> Json.fromValues(c.versions.map(Json.fromInt))
+      )
   given decoderContractDeleteRequested: Decoder[ContractDeleteRequested] =
     ConfiguredDecoder.derived[ContractDeleteRequested]
 

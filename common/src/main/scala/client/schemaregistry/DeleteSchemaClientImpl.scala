@@ -16,23 +16,25 @@ import cats.syntax.functor.*
 import cats.syntax.option.*
 import org.http4s.{EntityDecoder, EntityEncoder, Response, Uri}
 
-final class DeleteSchemaClientImpl[F[_] : Async](baseUri: String,
-                                                 client: HttpClient[F]) extends DeleteSchemaClient[F]
-                                                                        with ResponseMixin[F]
-                                                                        with SchemaRegistryPaths[F]:
+final class DeleteSchemaClientImpl[F[_]: Async](baseUri: String, client: HttpClient[F])
+    extends DeleteSchemaClient[F]
+    with ResponseMixin[F]
+    with SchemaRegistryPaths[F]:
   import http4s.entitycodecs.VersionEntityCodec.given
   import http4s.entitycodecs.VersionsEntityCodec.given
 
-  override def deleteSchemaVersion(subject: String, version: Int): EitherT[F, HttpErrorDTO, Version] =
+  override def deleteSchemaVersion(
+      subject: String,
+      version: Int): EitherT[F, HttpErrorDTO, Version] =
     val uri = Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions/$version")
     for
       response <- client.delete(uri, None)
-      version  <- convertResponse[Version](response)("FIXME")
+      version  <- convertResponse[Version](response)("FIXME") // fixme
     yield version
 
   override def deleteSchemaSubject(subject: String): EitherT[F, HttpErrorDTO, Versions] =
     val uri = Uri.unsafeFromString(s"$baseUri/$subjects/$subject")
     for
       response <- client.delete(uri, None)
-      versions <- convertResponse[Versions](response)("FIXME")
+      versions <- convertResponse[Versions](response)("FIXME") // fixme
     yield versions

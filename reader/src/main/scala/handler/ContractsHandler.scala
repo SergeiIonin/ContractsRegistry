@@ -16,7 +16,8 @@ trait ContractsHandler[F[_]]:
   def deleteContract(subject: String): F[Unit]
 
 object ContractsHandler:
-  def make[F[_] : Concurrent](repository: ContractsRepository[F],
-                          gitClient: GitHubClient[F]
-                        )(using Logger[F]): Resource[F, ContractsHandler[F]] =
+  def make[F[_]: Concurrent](
+      repository: ContractsRepository[F],
+      gitClient: GitHubClient[F]
+  )(using Logger[F]): Resource[F, ContractsHandler[F]] =
     Resource.pure[F, ContractsHandler[F]](ContractsHandlerImpl[F](repository, gitClient))

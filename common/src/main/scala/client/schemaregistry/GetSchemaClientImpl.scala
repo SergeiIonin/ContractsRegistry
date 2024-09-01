@@ -17,40 +17,45 @@ import cats.syntax.functor.*
 import cats.syntax.option.*
 import org.http4s.{EntityDecoder, EntityEncoder, Response, Uri}
 
-final class GetSchemaClientImpl[F[_] : Async](baseUri: String,
-                                              client: HttpClient[F]) extends GetSchemaClient[F]
-                                                                        with ResponseMixin[F]
-                                                                        with SchemaRegistryPaths[F]:
+final class GetSchemaClientImpl[F[_]: Async](baseUri: String, client: HttpClient[F])
+    extends GetSchemaClient[F]
+    with ResponseMixin[F]
+    with SchemaRegistryPaths[F]:
   import http4s.entitycodecs.VersionEntityCodec.given
   import http4s.entitycodecs.VersionsEntityCodec.given
   import http4s.entitycodecs.SubjectsEntityCodec.given
   import http4s.entitycodecs.SchemaDtoEntityCodec.given
   import http.client.extensions.*
 
-
-  override def getSchemaVersion(subject: String, version: Int): EitherT[F, HttpErrorDTO, SchemaDTO] =
+  override def getSchemaVersion(
+      subject: String,
+      version: Int): EitherT[F, HttpErrorDTO, SchemaDTO] =
     for
-      response <- client.get(Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions/$version"), None)
-      dto <- convertResponse[SchemaDTO](response)("FIXME")
+      response <- client.get(
+        Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions/$version"),
+        None)
+      dto <- convertResponse[SchemaDTO](response)("FIXME") // fixme
     yield dto
 
   override def getSchemaVersions(subject: String): EitherT[F, HttpErrorDTO, Versions] =
     for
-      response <- client.get(Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions"), None)
-      versions <- convertResponse[Versions](response)("FIXME")
+      response <- client.get(
+        Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions"),
+        None)
+      versions <- convertResponse[Versions](response)("FIXME") // fixme
     yield versions
 
   override def getSubjects(): EitherT[F, HttpErrorDTO, Subjects] =
     for
       response <- client.get(Uri.unsafeFromString(s"$baseUri/$subjects"), None)
-      subjects <- convertResponse[Subjects](response)("FIXME")
+      subjects <- convertResponse[Subjects](response)("FIXME") // fixme
     yield subjects
 
   override def getLatestSchema(subject: String): EitherT[F, HttpErrorDTO, SchemaDTO] =
     def getLatestVersion(subject: String): EitherT[F, HttpErrorDTO, Option[Int]] =
       for
         versions <- getSchemaVersions(subject)
-        latest   = Versions.toList(versions).sorted.lastOption
+        latest = Versions.toList(versions).sorted.lastOption
       yield latest
 
     def getSchema(subject: String, version: Int): EitherT[F, HttpErrorDTO, SchemaDTO] =
@@ -58,8 +63,7 @@ final class GetSchemaClientImpl[F[_] : Async](baseUri: String,
 
     for
       latestVersion <- getLatestVersion(subject)
-      schemaDto     <- latestVersion match
-                          case Some(version) => getSchema(subject, version)
-                          case None => BadRequestDTO(404, "No versions found").toLeftEitherT[SchemaDTO]
+      schemaDto <- latestVersion match
+        case Some(version) => getSchema(subject, version)
+        case None => BadRequestDTO(404, "No versions found").toLeftEitherT[SchemaDTO]
     yield schemaDto
-

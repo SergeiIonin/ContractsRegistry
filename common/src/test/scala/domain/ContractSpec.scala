@@ -27,12 +27,15 @@ class ContractSpec extends AnyWordSpec with Matchers:
           |}
           |""".stripMargin
       val decoded = decode[Contract](raw)
-      decoded.toOption shouldEqual Some(Contract(
-        "testSubject",
-        1,
-        123,
-        "syntax = \"proto3\";\npackage schema_registry;\n\nmessage SchemaMessage {\n  string subject = 1;\n  int32 version = 2;\n  int32 id = 3;\n  string schema = 4;\n  bool deleted = 5;\n}\n",
-        SchemaType.PROTOBUF, false,
-        Some(false)))
+      decoded.toOption shouldEqual Some(
+        Contract(
+          "testSubject",
+          1,
+          123,
+          "syntax = \"proto3\";\npackage schema_registry;\n\nmessage SchemaMessage {\n  string subject = 1;\n  int32 version = 2;\n  int32 id = 3;\n  string schema = 4;\n  bool deleted = 5;\n}\n",
+          SchemaType.PROTOBUF,
+          false,
+          Some(false)
+        ))
     }
   }
