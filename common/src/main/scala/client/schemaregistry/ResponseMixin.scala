@@ -3,13 +3,13 @@ package client.schemaregistry
 
 import dto.errors.{BadRequestDTO, HttpErrorDTO, InternalServerErrorDTO}
 
-import cats.effect.Async
+import cats.MonadThrow
 import cats.data.EitherT
 import cats.syntax.either.*
 import http.client.extensions.*
 import org.http4s.{EntityDecoder, Response}
 
-trait ResponseMixin[F[_] : Async]:
+trait ResponseMixin[F[_] : MonadThrow]:
   private def responseOk(response: Response[F]): Boolean =
     response.status.code >= 200 && response.status.code < 300
 

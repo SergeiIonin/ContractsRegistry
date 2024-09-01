@@ -31,19 +31,19 @@ final class GetSchemaClientImpl[F[_] : Async](baseUri: String,
   override def getSchemaVersion(subject: String, version: Int): EitherT[F, HttpErrorDTO, SchemaDTO] =
     for
       response <- client.get(Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions/$version"), None)
-      dto <- convertResponse[SchemaDTO](response)("FIXME")
+      dto <- convertResponse[SchemaDTO](response)("FIXME") // fixme
     yield dto
 
   override def getSchemaVersions(subject: String): EitherT[F, HttpErrorDTO, Versions] =
     for
       response <- client.get(Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions"), None)
-      versions <- convertResponse[Versions](response)("FIXME")
+      versions <- convertResponse[Versions](response)("FIXME") // fixme
     yield versions
 
   override def getSubjects(): EitherT[F, HttpErrorDTO, Subjects] =
     for
       response <- client.get(Uri.unsafeFromString(s"$baseUri/$subjects"), None)
-      subjects <- convertResponse[Subjects](response)("FIXME")
+      subjects <- convertResponse[Subjects](response)("FIXME") // fixme
     yield subjects
 
   override def getLatestSchema(subject: String): EitherT[F, HttpErrorDTO, SchemaDTO] =

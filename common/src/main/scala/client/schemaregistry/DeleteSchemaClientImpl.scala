@@ -27,12 +27,12 @@ final class DeleteSchemaClientImpl[F[_] : Async](baseUri: String,
     val uri = Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions/$version")
     for
       response <- client.delete(uri, None)
-      version  <- convertResponse[Version](response)("FIXME")
+      version  <- convertResponse[Version](response)("FIXME") // fixme
     yield version
 
   override def deleteSchemaSubject(subject: String): EitherT[F, HttpErrorDTO, Versions] =
     val uri = Uri.unsafeFromString(s"$baseUri/$subjects/$subject")
     for
       response <- client.delete(uri, None)
-      versions <- convertResponse[Versions](response)("FIXME")
+      versions <- convertResponse[Versions](response)("FIXME") // fixme
     yield versions

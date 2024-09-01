@@ -13,9 +13,10 @@ import org.http4s.Uri
 
 final class CreateSchemaClientImpl[F[_] : Async](
                                                   baseUri: String,
-                                                  client: HttpClient[F]) extends CreateSchemaClient[F]
-                                                                         with ResponseMixin[F]
-                                                                         with SchemaRegistryPaths[F]:
+                                                  client: HttpClient[F]
+                                                ) extends CreateSchemaClient[F]
+                                                  with ResponseMixin[F]
+                                                  with SchemaRegistryPaths[F]:
   import http4s.entitycodecs.CreateSchemaDtoEntityCodec.given
   import http4s.entitycodecs.CreateSchemaResponseDtoEntityCodec.given
 
@@ -23,5 +24,5 @@ final class CreateSchemaClientImpl[F[_] : Async](
     val uri = Uri.unsafeFromString(s"$baseUri/$subjects/$subject/$versions")
     for
       response <- client.post[CreateSchemaDTO](uri, schemaDTO, None)
-      dto      <- convertResponse[CreateSchemaResponseDTO](response)("FIXME")
+      dto      <- convertResponse[CreateSchemaResponseDTO](response)("FIXME") // fixme
     yield dto
