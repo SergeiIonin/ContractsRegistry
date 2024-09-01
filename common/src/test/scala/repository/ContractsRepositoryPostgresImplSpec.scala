@@ -52,36 +52,39 @@ class ContractsRepositoryPostgresImplSpec extends AnyWordSpec with Matchers with
         val psqlContainer: PostgreSQLContainer = container.asInstanceOf[PostgreSQLContainer]
         (for
           sessionR <- sessionPooledResource(psqlContainer)
-          repo <- ContractsRepository.make[IO](sessionR)
+          repo     <- ContractsRepository.make[IO](sessionR)
         yield (sessionR, repo)).use { (sR, repository) => {
           for
-            _ <- initPostgres(sR)
-            _ <- repository.save(testContractV1)
-            _ <- repository.save(testContractV2)
-            resOpt1 <- repository.get(testSubject, 1)
-            _ <- IO.whenA(resOpt1.isEmpty)(IO.raiseError(new RuntimeException("Contract not found")))
-            res1 = resOpt1.get
-            _ = res1 shouldBe testContractV1
+            _         <- initPostgres(sR)
+            _         <- repository.save(testContractV1)
+            _         <- repository.save(testContractV2)
+            resOpt1   <- repository.get(testSubject, 1)
+            _         <- IO.whenA(resOpt1.isEmpty)(IO.raiseError(new RuntimeException("Contract not found")))
+            res1      = resOpt1.get
+            _         = res1 shouldBe testContractV1
             versionsS <- repository.getAllVersionsForSubject(testSubject)
-            versions <- versionsS.compile.toList
-            _ = versions shouldBe List(1, 2)
-            _ <- repository.delete(testSubject, 2)
-            resOpt2 <- repository.get(testSubject, 2)
-            _ = resOpt2 shouldBe None
-            _ <- repository.save(testContractV2)
-            _ <- repository.updateIsMerged(testContractV2.subject, testContractV2.version)
-            resOpt2 <- repository.get(testSubject, 2)
-            _ = resOpt2.exists(_.isMerged) shouldBe true
+            versions  <- versionsS.compile.toList
+            _         = versions shouldBe List(1, 2)
+            _         <- repository.delete(testSubject, 2)
+            resOpt2   <- repository.get(testSubject, 2)
+            _         = resOpt2 shouldBe None
+            _         <- repository.save(testContractV2)
+            _         <- repository.updateIsMerged(testContractV2.subject, testContractV2.version)
+            resOpt2   <- repository.get(testSubject, 2)
+            _         = resOpt2.exists(_.isMerged) shouldBe true
+            subjectsS <- repository.getAllSubjects()
+            subjects  <- subjectsS.compile.toList
+            _         = subjects shouldBe List(testSubject)
             versionsS <- repository.getAllVersionsForSubject(testSubject)
-            versions <- versionsS.compile.toList
-            _ = versions shouldBe List(1, 2)
-            _ <- versionsS.parEvalMapUnordered(10)(version =>
-              repository.delete(testSubject, version)
-            ).compile.drain
-            resOpt1 <- repository.get(testSubject, 1)
-            resOpt2 <- repository.get(testSubject, 2)
-            _ = resOpt1 shouldBe None
-            _ = resOpt2 shouldBe None
+            versions  <- versionsS.compile.toList
+            _         = versions shouldBe List(1, 2)
+            _         <- versionsS.parEvalMapUnordered(10)(version =>
+                            repository.delete(testSubject, version)
+                         ).compile.drain
+            resOpt1   <- repository.get(testSubject, 1)
+            resOpt2   <- repository.get(testSubject, 2)
+            _         = resOpt1 shouldBe None
+            _         = resOpt2 shouldBe None
           yield true
         }
         }.unsafeRunSync()
