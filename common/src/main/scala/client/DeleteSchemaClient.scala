@@ -14,5 +14,7 @@ trait DeleteSchemaClient[F[_]] extends SchemaClient[F]:
   def deleteSchemaSubject(subject: String): EitherT[F, HttpErrorDTO, Versions]
 
 object DeleteSchemaClient:
-  def make[F[_] : Async](baseUri: String, httpClient: HttpClient[F]): Resource[F, DeleteSchemaClient[F]] =
+  def make[F[_]: Async](
+      baseUri: String,
+      httpClient: HttpClient[F]): Resource[F, DeleteSchemaClient[F]] =
     Resource.pure[F, DeleteSchemaClient[F]](DeleteSchemaClientImpl(baseUri, httpClient))

@@ -8,5 +8,7 @@ import org.http4s.circe.{jsonEncoderOf, jsonOf}
 import org.http4s.{EntityDecoder, EntityEncoder}
 
 object CreateSchemaResponseDtoEntityCodec:
-  given createSchemaResponseDtoEncoder[F[_]]: EntityEncoder[F, CreateSchemaResponseDTO] = jsonEncoderOf[F, CreateSchemaResponseDTO]
-  given createSchemaResponseDtoDecoder[F[_] : Concurrent]: EntityDecoder[F, CreateSchemaResponseDTO] = jsonOf[F, CreateSchemaResponseDTO]
+  given createSchemaResponseDtoEncoder[F[_]]: EntityEncoder[F, CreateSchemaResponseDTO] =
+    jsonEncoderOf[F, CreateSchemaResponseDTO]
+  given createSchemaResponseDtoDecoder[F[_]: Concurrent]
+      : EntityDecoder[F, CreateSchemaResponseDTO] = jsonOf[F, CreateSchemaResponseDTO]

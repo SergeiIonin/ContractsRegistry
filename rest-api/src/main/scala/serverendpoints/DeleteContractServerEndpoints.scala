@@ -19,17 +19,19 @@ import cats.syntax.option.*
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
 
-class DeleteContractServerEndpoints[F[_] : Async](
-                                                   getClient: GetSchemaClient[F],
-                                                   producer: EventsProducer[F, ContractDeletedEventKey, ContractDeletedEvent]
-                                                 ) extends DeleteContractEndpoints:
+class DeleteContractServerEndpoints[F[_]: Async](
+    getClient: GetSchemaClient[F],
+    producer: EventsProducer[F, ContractDeletedEventKey, ContractDeletedEvent]
+) extends DeleteContractEndpoints:
 
   private val deleteContractVersionSE: ServerEndpoint[Any, F] =
     deleteContractVersion.serverLogic((subject, version) => {
       val k = ContractVersionDeleteRequestedKey(subject, version)
       val v = ContractVersionDeleteRequested(subject, version)
       produce[DeleteContractVersionResponseDTO](
-        DeleteContractVersionResponseDTO(subject, version), k, v
+        DeleteContractVersionResponseDTO(subject, version),
+        k,
+        v
       ).value
     })
 
@@ -37,14 +39,13 @@ class DeleteContractServerEndpoints[F[_] : Async](
     deleteContract.serverLogic(subject => {
       (for
         versions <- getClient.getSchemaVersions(subject)
-        k        = ContractDeleteRequestedKey(subject)
-        v        = ContractDeleteRequested(subject, Versions.toList(versions))
+        k = ContractDeleteRequestedKey(subject)
+        v = ContractDeleteRequested(subject, Versions.toList(versions))
         response <- produce[DeleteContractResponseDTO](DeleteContractResponseDTO(subject), k, v)
       yield response).value
     })
-  
-  private def produce[R](r: => R,
-                         k: ContractDeletedEventKey, v: ContractDeletedEvent) =
+
+  private def produce[R](r: => R, k: ContractDeletedEventKey, v: ContractDeletedEvent) =
     EitherT(
       producer.produce(k, v).attempt.map {
         case Right(_) =>
@@ -54,7 +55,7 @@ class DeleteContractServerEndpoints[F[_] : Async](
             .asLeft[R]
       }
     )
-  
+
   private val getServerEndpoints: List[ServerEndpoint[Any, F]] =
     List(deleteContractVersionSE, deleteContractSE)
 

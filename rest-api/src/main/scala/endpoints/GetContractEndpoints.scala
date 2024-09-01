@@ -8,9 +8,10 @@ import sttp.tapir.Schema
 import sttp.model.StatusCode
 
 trait GetContractEndpoints extends RootContractsEndpoint:
-  
+
   val getContractVersion =
-    root.get
+    root
+      .get
       .in(`:subject`)
       .in(versions)
       .in(`:version`)
@@ -19,27 +20,30 @@ trait GetContractEndpoints extends RootContractsEndpoint:
       .description("Get a contract by subject and version")
 
   val getVersions =
-    root.get
+    root
+      .get
       .in(`:subject`)
       .in(versions)
       .out(jsonBody[List[Int]])
       .name(ContractEndpoint.GetVersions.toString)
       .description("Get all versions of a contract")
-  
+
   val getSubjects =
-    root.get
+    root
+      .get
       .in(subjects)
       .out(jsonBody[List[String]])
       .name(ContractEndpoint.GetSubjects.toString)
       .description("Get all subjects")
-  
+
   val getLatestContract =
-    root.get
+    root
+      .get
       .in(`:subject`)
       .in(latest)
       .out(jsonBody[ContractDTO])
       .name(ContractEndpoint.GetLatestContract.toString)
       .description("Get the latest contract version")
-  
+
   def getEndpoints: List[AnyEndpoint] =
     List(getContractVersion, getVersions, getSubjects, getLatestContract)

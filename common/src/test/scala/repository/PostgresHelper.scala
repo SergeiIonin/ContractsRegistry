@@ -28,39 +28,44 @@ trait PostgresHelper[F[_]]:
 
   // todo this is a hack for the case when sidecar ryuk-containers weren't terminated after test. Any chance to make it better?
   def after_All(): Unit =
-    val dockerClient: DockerClient = DockerClientBuilder.getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder().build()).build()
+    val dockerClient: DockerClient = DockerClientBuilder
+      .getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder().build())
+      .build()
     dockerClient.listContainersCmd().exec().forEach { container =>
       if (container.getImage.contains("testcontainers")) {
         val id = container.getId
-        println(s"removing container: ${container.getNames.toList.mkString(", ")}, id: ${container.getId}")
-        Try(dockerClient.stopContainerCmd(id).exec()) match 
+        println(
+          s"removing container: ${container.getNames.toList.mkString(", ")}, id: ${container.getId}")
+        Try(dockerClient.stopContainerCmd(id).exec()) match
           case Failure(e) => println(s"error stopping ryuk container: ${e.getMessage}")
           case Success(_) => ()
       }
     }
-  
+
   def initPostgres(session: Session[IO]): IO[Unit] =
-    session.execute(
-      sql"""CREATE TABLE contracts(
+    session
+      .execute(sql"""CREATE TABLE contracts(
         subject VARCHAR NOT NULL,
         version INTEGER NOT NULL,
         id INTEGER NOT NULL,
         schema TEXT NOT NULL,
         schematype TEXT NOT NULL,
         ismerged BOOLEAN NOT NULL DEFAULT FALSE,
-        PRIMARY KEY (subject, version));""".command).void
+        PRIMARY KEY (subject, version));""".command)
+      .void
 
   def initPostgres(sessionR: Resource[IO, Session[IO]]): IO[Unit] =
     sessionR.use { session =>
-      session.execute(
-        sql"""CREATE TABLE contracts(
+      session
+        .execute(sql"""CREATE TABLE contracts(
             subject VARCHAR NOT NULL,
             version INTEGER NOT NULL,
             id INTEGER NOT NULL,
             schema TEXT NOT NULL,
             schematype TEXT NOT NULL,
             ismerged BOOLEAN NOT NULL DEFAULT FALSE,
-            PRIMARY KEY (subject, version));""".command).void
+            PRIMARY KEY (subject, version));""".command)
+        .void
     }
 
   def sessionSingleResource(container: PostgreSQLContainer): Resource[IO, Session[IO]] =
@@ -81,4 +86,4 @@ trait PostgresHelper[F[_]]:
       password = postgresContainer.password.some,
       database = postgresContainer.databaseName,
       max = 10
-    ) 
+    )

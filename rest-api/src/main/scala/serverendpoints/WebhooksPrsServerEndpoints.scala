@@ -16,11 +16,11 @@ import org.typelevel.log4cats.Logger
 import sttp.tapir.server.ServerEndpoint
 import sttp.tapir.server.ServerEndpoint.Full
 
-class WebhooksPrsServerEndpoints[F[_] : Async : Logger](
-                                                         prsService: PrService[F],
-                                                       ) extends WebhooksEndpoints:
+class WebhooksPrsServerEndpoints[F[_]: Async: Logger](
+    prsService: PrService[F]
+) extends WebhooksEndpoints:
   private val logger = summon[Logger[F]]
-  
+
   private val pullRequestSE: ServerEndpoint[Any, F] =
     pullRequest.serverLogic(pr => {
       val isMerged = pr.pull_request.merged
@@ -29,9 +29,11 @@ class WebhooksPrsServerEndpoints[F[_] : Async : Logger](
       val contractPullRequest = ContractPullRequest.fromRaw(body, isDeleted)
 
       contractPullRequest match
-        case Left(err) => 
+        case Left(err) =>
           logger.error(s"Failed to parse contract pull request: $err") *>
-            BadRequestDTO(msg = s"PR body is invalid: $body").asLeft[PrWebhookResponseDTO].pure[F]
+            BadRequestDTO(msg = s"PR body is invalid: $body")
+              .asLeft[PrWebhookResponseDTO]
+              .pure[F]
         case Right(contractPr) =>
           logger.info(s"Received PR: $pr") *> {
             val response = PrWebhookResponseDTO(body, isMerged)
@@ -41,7 +43,7 @@ class WebhooksPrsServerEndpoints[F[_] : Async : Logger](
               response.asRight[HttpErrorDTO].pure[F]
           }
     })
-  
+
   private val getServerEndpoints: List[ServerEndpoint[Any, F]] =
     List(pullRequestSE)
 

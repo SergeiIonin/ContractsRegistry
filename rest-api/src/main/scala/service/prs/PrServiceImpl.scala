@@ -14,26 +14,36 @@ import cats.syntax.either.*
 import cats.syntax.functor.*
 import cats.{Monad, MonadThrow}
 
-class PrServiceImpl[F[_] : Monad : MonadThrow](
-                                                contractsService: ContractService[F],
-                                                getClient: GetSchemaClient[F],
-                                                deleteClient: DeleteSchemaClient[F]
-                                              ) extends PrService[F]:
-  override def processPR(pr: ContractPullRequest): EitherT[F, HttpErrorDTO, SubjectAndVersionDTO] =
-    if pr.isDeleted then
-      deleteContractVersion(pr.subject, pr.version)
-    else
-      addContract(pr.subject, pr.version)
-  
-  private def addContract(subject: String, version: Int): EitherT[F, HttpErrorDTO, SubjectAndVersionDTO] =
+class PrServiceImpl[F[_]: Monad: MonadThrow](
+    contractsService: ContractService[F],
+    getClient: GetSchemaClient[F],
+    deleteClient: DeleteSchemaClient[F]
+) extends PrService[F]:
+  override def processPR(
+      pr: ContractPullRequest): EitherT[F, HttpErrorDTO, SubjectAndVersionDTO] =
+    if pr.isDeleted then deleteContractVersion(pr.subject, pr.version)
+    else addContract(pr.subject, pr.version)
+
+  private def addContract(
+      subject: String,
+      version: Int): EitherT[F, HttpErrorDTO, SubjectAndVersionDTO] =
     for
-      schema   <- getClient.getSchemaVersion(subject, version)
-      contract = Contract(subject, version, schema.id, schema.schema, schema.schemaType, true, false.some)
-      _        <- contractsService.saveContract(contract)
+      schema <- getClient.getSchemaVersion(subject, version)
+      contract = Contract(
+        subject,
+        version,
+        schema.id,
+        schema.schema,
+        schema.schemaType,
+        true,
+        false.some)
+      _ <- contractsService.saveContract(contract)
     yield SubjectAndVersionDTO(subject, version)
-  
+
   // todo we shouldn't fail of the contract was not found
-  private def deleteContractVersion(subject: String, version: Int): EitherT[F, HttpErrorDTO, SubjectAndVersionDTO] =
+  private def deleteContractVersion(
+      subject: String,
+      version: Int): EitherT[F, HttpErrorDTO, SubjectAndVersionDTO] =
     for
       _ <- contractsService.deleteContractVersion(subject, version)
       _ <- deleteClient.deleteSchemaVersion(subject, version)

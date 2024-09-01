@@ -14,7 +14,9 @@ trait GetSchemaClient[F[_]] extends SchemaClient[F]:
   def getSchemaVersions(subject: String): EitherT[F, HttpErrorDTO, Versions]
   def getSubjects(): EitherT[F, HttpErrorDTO, Subjects]
   def getLatestSchema(subject: String): EitherT[F, HttpErrorDTO, SchemaDTO]
-  
+
 object GetSchemaClient:
-  def make[F[_] : Async](baseUri: String, httpClient: HttpClient[F]): Resource[F, GetSchemaClient[F]] =
+  def make[F[_]: Async](
+      baseUri: String,
+      httpClient: HttpClient[F]): Resource[F, GetSchemaClient[F]] =
     Resource.pure[F, GetSchemaClient[F]](GetSchemaClientImpl(baseUri, httpClient))

@@ -9,15 +9,15 @@ import cats.syntax.either.*
 import http.client.extensions.*
 import org.http4s.{EntityDecoder, Response}
 
-trait ResponseMixin[F[_] : MonadThrow]:
+trait ResponseMixin[F[_]: MonadThrow]:
   private def responseOk(response: Response[F]): Boolean =
     response.status.code >= 200 && response.status.code < 300
 
   private def responseBad(response: Response[F]): Boolean =
     response.status.code >= 400 && response.status.code < 500
 
-  def convertResponse[R](response: Response[F])(errorMsg: => String)
-                                (using EntityDecoder[F, R]): EitherT[F, HttpErrorDTO, R] =
+  def convertResponse[R](response: Response[F])(errorMsg: => String)(
+      using EntityDecoder[F, R]): EitherT[F, HttpErrorDTO, R] =
     if (responseOk(response)) {
       response.as[R].toEitherT
     } else if (responseBad(response)) {

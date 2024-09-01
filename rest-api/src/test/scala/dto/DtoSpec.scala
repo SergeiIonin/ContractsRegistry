@@ -22,6 +22,12 @@ class DtoSpec extends AnyWordSpec with Matchers:
           |}
           |""".stripMargin
       val contractDto = decode[ContractDTO](json)
-      contractDto shouldBe Right(ContractDTO("contracts", 2, SchemaType.PROTOBUF, "syntax = \"proto3\";\npackage schema_registry;\n\nmessage SchemaMessage {\n  string subject = 1;\n  int32 version = 2;\n  int32 id = 3;\n  string schema = 4;\n  bool deleted = 5;\n}\n"))
+      contractDto shouldBe Right(
+        ContractDTO(
+          "contracts",
+          2,
+          SchemaType.PROTOBUF,
+          "syntax = \"proto3\";\npackage schema_registry;\n\nmessage SchemaMessage {\n  string subject = 1;\n  int32 version = 2;\n  int32 id = 3;\n  string schema = 4;\n  bool deleted = 5;\n}\n"
+        ))
     }
   }

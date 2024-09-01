@@ -5,6 +5,6 @@ import pureconfig.*
 import pureconfig.generic.derivation.default.*
 
 final case class RestApiConfig(
-                                    host: String,
-                                    port: Int,
-                                  ) derives ConfigReader
+    host: String,
+    port: Int
+) derives ConfigReader

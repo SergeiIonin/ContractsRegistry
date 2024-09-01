@@ -9,8 +9,10 @@ import io.circe.{Decoder, Encoder, Json}
 object ContractEventKeyCodec:
   given config: Configuration = Configuration.default.withDiscriminator("type")
 
-  given encoderContractEventKey: Encoder[ContractEventKey] = ConfiguredEncoder.derived[ContractEventKey]
-  given decoderContractEventKey: Decoder[ContractEventKey] = ConfiguredDecoder.derived[ContractEventKey]
+  given encoderContractEventKey: Encoder[ContractEventKey] =
+    ConfiguredEncoder.derived[ContractEventKey]
+  given decoderContractEventKey: Decoder[ContractEventKey] =
+    ConfiguredDecoder.derived[ContractEventKey]
 
   given encoderCreateRequestedKey: Encoder[ContractCreateRequestedKey] =
     (c: ContractCreateRequestedKey) =>
@@ -22,8 +24,10 @@ object ContractEventKeyCodec:
   given decoderCreateRequestedKey: Decoder[ContractCreateRequestedKey] =
     ConfiguredDecoder.derived[ContractCreateRequestedKey]
 
-  given encoderDeleteEventKey: Encoder[ContractDeletedEventKey] = ConfiguredEncoder.derived[ContractDeletedEventKey]
-  given decoderDeleteEventKey: Decoder[ContractDeletedEventKey] = ConfiguredDecoder.derived[ContractDeletedEventKey]
+  given encoderDeleteEventKey: Encoder[ContractDeletedEventKey] =
+    ConfiguredEncoder.derived[ContractDeletedEventKey]
+  given decoderDeleteEventKey: Decoder[ContractDeletedEventKey] =
+    ConfiguredDecoder.derived[ContractDeletedEventKey]
 
   given encoderContractDeleteRequestedKey: Encoder[ContractDeleteRequestedKey] =
     (c: ContractDeleteRequestedKey) =>

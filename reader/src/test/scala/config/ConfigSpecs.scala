@@ -14,7 +14,7 @@ class ConfigSpecs extends AnyWordSpec with Matchers:
       contract.token shouldEqual "your_token"
       contract.path shouldEqual "your_path"
       contract.baseBranch shouldEqual "your_base_branch"
-      
+
       val kafka = config.kafka
       val consumerProps = kafka.consumerProps
       consumerProps.bootstrapServers shouldEqual List("localhost:19092")
