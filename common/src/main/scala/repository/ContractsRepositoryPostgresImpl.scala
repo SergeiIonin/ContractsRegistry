@@ -39,7 +39,7 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Sessio
 
   private val versionDecoder: skunk.Decoder[Int] = int4
   
-  private val subjectDecoder: skunk.Decoder[String] = text
+  private val subjectDecoder: skunk.Decoder[String] = varchar
 
   private val insertCommand: Command[Contract] =
     sql"INSERT INTO contracts (subject, version, id, schema, schemaType, isMerged) VALUES ($contractEncoder)".command
@@ -54,7 +54,7 @@ class ContractsRepositoryPostgresImpl[F[_] : Async](sessionR: Resource[F, Sessio
     sql"SELECT subject, version, id, schema, schemaType, isMerged FROM contracts".query(contractDecoder)
 
   private val selectAllSubjectsQuery: Query[Void, String] =
-    sql"SELECT subject FROM contracts".query(subjectDecoder)
+    sql"SELECT DISTINCT subject FROM contracts".query(subjectDecoder)
 
   private val selectAllVersionsForSubjectQuery: Query[String, Int] =
     sql"SELECT version FROM contracts WHERE subject = $varchar".query(versionDecoder)
