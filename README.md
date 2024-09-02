@@ -44,6 +44,8 @@ After deploying this project, users are empowered with the following capabilitie
 
 [*] The term "subject" refers to the `name` of the contract. Both `subject` and `version` are borrowed from [`Schema Registry`](https://docs.confluent.io/platform/current/schema-registry/index.html), which plays a key role in this project.
 
+### GitHub Lifecycle
+
 Creating or deleting a contract triggers a request that generates a Pull Request (PR) in the GitHub repository. 
 
 The PR will resemble the following:
@@ -101,7 +103,6 @@ curl --location 'http://myawesometech.com:8080/contracts' \
 
 ### Set up
 The project consists of 2 modules: `rest-api` and `reader`.
-User should provide the following environment variables at the modules run
 #### reader
 This module handles `Kafka` events for creating and deleting contracts.
 ```shell
