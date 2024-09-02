@@ -6,7 +6,7 @@ This project provides lifecycle management for `Protobuf`-based contracts in a s
 
 Example usage: management of onboarding and deletion of contracts used between microservices within an organization.
 
-## REST API
+### REST API
 
 After deploying this project, users are empowered with the following capabilities:
  - **Create new contracts:** `POST /contracts`
