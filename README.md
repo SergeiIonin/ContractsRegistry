@@ -1,20 +1,28 @@
-# ContractsRegistry...4s (WIP)
-![latest version](https://img.shields.io/badge/version-0.5.0-orange)
+# ContractsRegistry...4s
+![latest version](https://img.shields.io/badge/version-0.6.0-orange)
 ![scala version](https://img.shields.io/badge/scala-3-red)
 
-This project plays a role of onboarding protobuf-based contracts used by the microservices of some platform.
+This project plays a role of lifecycle management of protobuf-based contracts used on some software project. E.g. it could handle onboarding and deleting of the contracts used between microservices within the organization. `Avro` and `Json` contracts should be supported as well.
 
-Contracts are registered via REST API which dispatches requests to `Schema Registry`, next each incoming contract is processed as `Kafka` record asynchronously. Finally, for each incoming contract the service creates a PR to the repository defined in the config.
+Upon deploying of this project, users are empowered with the following REST API capabilities:
+ - create new contracts: `POST /contracts`
+ - fetch contracts by their `subject` and `version`*: `GET /contracts/{subject}/versions/{version}` 
+ - fetch all `subjects`: `GET /contracts/subjects`
+ - fetch all `versions` for `subject`: `GET /contracts/{subject}/versions` 
+ - fetch the latest version of the contract for the `subject`: `GET /contracts/{subject}/latest`
+ - delete the contract for `subject` and `version`: `DELETE /contracts/{subject}/versions/{version}`
+ - delete all contracts for the `subject` `DELETE /contracts/{subject}`
+
+* `subject` is essentially a name of the contract. The terms `subject` and `version` are borrowed from [`Schema Registry`](https://docs.confluent.io/platform/current/schema-registry/index.html), which plays a key role in this project.
+
+Create and delete of the contract basically mean the request to do so: each action leads to `Pull Request` to the github repository, which should be configured at the project setup stage.
 
 To access the repository, developer should provide `owner`, `repo`, `branch`, and `token` with the relevant capabilities.
 
-Microservices contracts are governed via this service leveraging `Schema Registry` built-in features (creating, deleting, versioning) making 
-contracts handing clean and transparent.
+Next the PR will resemble the following:
 
-Thus, onboarding of the new contract consists of 2 steps:
-  - Request via REST API to `ContractsRegistry`
-  - Approve of the PR to `owner:repo:branch` with the new contract `<contract_name>_v<contract_version>.proto` (e.g. `foo_v1.proto`)
+**Title**: `Add contract foo_3`, where `foo` is the `subject` and `3` is the `version`
 
-Note: it's implied that the repository holding the contracts is a standalone repository where `.proto` files are hosted (and maybe also compiled). 
+**From**:  `add-foo-3`
 
-It's also possible to delete contract version (`foo_v1.proto`) or the all contracts for the prefix (e.g. all contracts starting with `foo`).
+**To**: `configured_branch` (`main` or `master`)
