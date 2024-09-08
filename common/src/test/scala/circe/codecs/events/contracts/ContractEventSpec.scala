@@ -38,7 +38,7 @@ class ContractEventSpec extends AnyWordSpec with Matchers:
   "ContractEvent" should {
     "encode and decode ContractCreateRequested correctly" in {
       val event: ContractCreateRequested = ContractCreateRequested(
-        Contract("subject1", 1, 1, "schema1", SchemaType.PROTOBUF, None))
+        Contract("subject1", 1, 1, "schema1", SchemaType.PROTOBUF))
       val json = event.asJson.noSpaces
       val decodedEvent = decode[ContractEvent](json)
       decodedEvent shouldBe Right(event)

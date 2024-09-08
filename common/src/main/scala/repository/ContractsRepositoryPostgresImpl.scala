@@ -29,7 +29,7 @@ class ContractsRepositoryPostgresImpl[F[_]: Async](sessionR: Resource[F, Session
     extends ContractsRepository[F]:
   private val contractEncoder: skunk.Encoder[Contract] =
     (varchar ~ int4 ~ int4 ~ text ~ text).contramap {
-      case Contract(subject, version, id, schema, schemaType, _) =>
+      case Contract(subject, version, id, schema, schemaType) =>
         subject ~ version ~ id ~ schema ~ schemaType.toString
     }
 

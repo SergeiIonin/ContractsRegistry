@@ -7,5 +7,4 @@ final case class Contract(
     id: Int,
     schema: String,
     schemaType: SchemaType,
-    deleted: Option[Boolean] = None // fixme rm it
 )

@@ -27,7 +27,7 @@ class ContractPullRequestSpec extends AnyWordSpec with Matchers {
     }
 
     "create a ContractPullRequest from a Contract in fromContract" in {
-      val contract = Contract("testSubject", 1, 123, "schema", PROTOBUF, None)
+      val contract = Contract("testSubject", 1, 123, "schema", PROTOBUF)
       val pr = ContractPullRequest.fromContract(contract)
       pr shouldEqual ContractPullRequest("testSubject", 1, isDeleted = false)
     }

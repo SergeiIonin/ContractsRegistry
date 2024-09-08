@@ -42,8 +42,8 @@ final class CreateContractServerEndpoints[F[_]: Async](
         version,
         id,
         schema,
-        SchemaType.fromString(schemaType),
-        None)
+        SchemaType.fromString(schemaType)
+        )
       _ <- EitherT(
         producer
           .produce(

@@ -11,7 +11,7 @@ final case class ContractPullRequest(subject: String, version: Int, isDeleted: B
 
 object ContractPullRequest:
   def fromContract(contract: Contract): ContractPullRequest =
-    ContractPullRequest(contract.subject, contract.version, contract.deleted.getOrElse(false))
+    ContractPullRequest(contract.subject, contract.version, false)
   def fromRaw(raw: String, isDeleted: Boolean): Either[String, ContractPullRequest] =
     raw.split("_").toList match
       case subject :: version :: Nil =>

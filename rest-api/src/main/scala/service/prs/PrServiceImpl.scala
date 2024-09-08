@@ -34,8 +34,8 @@ class PrServiceImpl[F[_]: Monad: MonadThrow](
         version,
         schema.id,
         schema.schema,
-        schema.schemaType,
-        false.some)
+        schema.schemaType
+        )
       _ <- contractsService.saveContract(contract)
     yield SubjectAndVersionDTO(subject, version)
 

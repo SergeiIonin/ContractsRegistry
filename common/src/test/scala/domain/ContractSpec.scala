@@ -10,9 +10,9 @@ import circe.codecs.domain.ContractCodec.given
 class ContractSpec extends AnyWordSpec with Matchers:
   "Contract" should {
     "be encoded" in {
-      val contract = Contract("testSubject", 1, 123, "schema", SchemaType.PROTOBUF, None)
+      val contract = Contract("testSubject", 1, 123, "schema", SchemaType.PROTOBUF)
       contract.asJson.noSpaces shouldEqual
-        """{"subject":"testSubject","version":1,"id":123,"schema":"schema","schemaType":"PROTOBUF","deleted":null}"""
+        """{"subject":"testSubject","version":1,"id":123,"schema":"schema","schemaType":"PROTOBUF"}"""
     }
     "be decoded" in {
       val raw =
@@ -22,8 +22,7 @@ class ContractSpec extends AnyWordSpec with Matchers:
           |  "version" : 1,
           |  "id"      : 123, 
           |  "schemaType" : "PROTOBUF",
-          |  "schema": "syntax = \"proto3\";\npackage schema_registry;\n\nmessage SchemaMessage {\n  string subject = 1;\n  int32 version = 2;\n  int32 id = 3;\n  string schema = 4;\n  bool deleted = 5;\n}\n",
-          |  "deleted": false
+          |  "schema": "syntax = \"proto3\";\npackage schema_registry;\n\nmessage SchemaMessage {\n  string subject = 1;\n  int32 version = 2;\n  int32 id = 3;\n  string schema = 4;\n  bool deleted = 5;\n}\n"
           |}
           |""".stripMargin
       val decoded = decode[Contract](raw)
@@ -33,8 +32,7 @@ class ContractSpec extends AnyWordSpec with Matchers:
           1,
           123,
           "syntax = \"proto3\";\npackage schema_registry;\n\nmessage SchemaMessage {\n  string subject = 1;\n  int32 version = 2;\n  int32 id = 3;\n  string schema = 4;\n  bool deleted = 5;\n}\n",
-          SchemaType.PROTOBUF,
-          Some(false)
+          SchemaType.PROTOBUF
         ))
     }
   }
