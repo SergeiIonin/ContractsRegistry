@@ -34,7 +34,6 @@ class ContractSpec extends AnyWordSpec with Matchers:
           123,
           "syntax = \"proto3\";\npackage schema_registry;\n\nmessage SchemaMessage {\n  string subject = 1;\n  int32 version = 2;\n  int32 id = 3;\n  string schema = 4;\n  bool deleted = 5;\n}\n",
           SchemaType.PROTOBUF,
-          false,
           Some(false)
         ))
     }

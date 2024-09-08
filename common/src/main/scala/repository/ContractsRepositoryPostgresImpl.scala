@@ -34,7 +34,7 @@ class ContractsRepositoryPostgresImpl[F[_]: Async](sessionR: Resource[F, Session
     }
 
   private val contractDecoder: skunk.Decoder[Contract] =
-    (varchar ~ int4 ~ int4 ~ text ~ text ~ bool).map {
+    (varchar ~ int4 ~ int4 ~ text ~ text).map {
       case subject ~ version ~ id ~ schema ~ schemaType =>
         Contract(subject, version, id, schema, SchemaType.fromString(schemaType))
     }

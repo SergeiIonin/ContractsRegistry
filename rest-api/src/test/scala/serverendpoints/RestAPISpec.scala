@@ -65,10 +65,10 @@ class RestAPISpec
     (for
       _ <- createSchemaClient.createSchema(subject, schemaDTOv1)
       _ <- contractService.saveContract(
-        Contract(subject, 1, 1, schemaV1, SchemaType.PROTOBUF, true, false.some))
+        Contract(subject, 1, 1, schemaV1, SchemaType.PROTOBUF, false.some))
       _ <- createSchemaClient.createSchema(subject, schemaDTOv2)
       _ <- contractService.saveContract(
-        Contract(subject, 2, 2, schemaV2, SchemaType.PROTOBUF, true, false.some))
+        Contract(subject, 2, 2, schemaV2, SchemaType.PROTOBUF, false.some))
     yield ()).value.void
 
   def deleteContractsForSubject(subject: String): IO[Unit] =

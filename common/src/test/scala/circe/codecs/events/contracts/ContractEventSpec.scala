@@ -1,10 +1,10 @@
 package io.github.sergeiionin.contractsregistrator
 package circe.codecs.events.contracts
 
+import circe.codecs.domain.events.contracts.ContractEventCodec.given
+import circe.codecs.domain.events.contracts.ContractEventKeyCodec.given
 import domain.events.contracts.*
 import domain.{Contract, SchemaType}
-import io.github.sergeiionin.contractsregistrator.circe.codecs.domain.events.contracts.ContractEventCodec.given
-import io.github.sergeiionin.contractsregistrator.circe.codecs.domain.events.contracts.ContractEventKeyCodec.given
 
 import io.circe.parser.decode
 import io.circe.syntax.*
@@ -38,7 +38,7 @@ class ContractEventSpec extends AnyWordSpec with Matchers:
   "ContractEvent" should {
     "encode and decode ContractCreateRequested correctly" in {
       val event: ContractCreateRequested = ContractCreateRequested(
-        Contract("subject1", 1, 1, "schema1", SchemaType.PROTOBUF, false, None))
+        Contract("subject1", 1, 1, "schema1", SchemaType.PROTOBUF, None))
       val json = event.asJson.noSpaces
       val decodedEvent = decode[ContractEvent](json)
       decodedEvent shouldBe Right(event)
