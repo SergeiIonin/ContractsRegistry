@@ -79,10 +79,7 @@ class ContractsHandlerSpec
                 versions  <- versionsS.compile.toList
                 _         <- logger.info(s"versions before deleting: $versions")
                 _ = versions shouldBe List(1, 2)
-                _           <- h.updateIsMergedStatus(testSubject, testVersion2)
                 contractOpt <- r.get(testSubject, testVersion2)
-                _           <- logger.info(s"contract after setting isMerged: $contractOpt")
-                _ = contractOpt.exists(_.isMerged) shouldBe true
                 _         <- h.deleteContract(testSubject)
                 versionsS <- r.getAllVersionsForSubject(testSubject)
                 versions  <- versionsS.compile.toList

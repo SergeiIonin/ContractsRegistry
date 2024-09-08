@@ -28,15 +28,15 @@ class ContractsRepositoryPostgresImpl[F[_]: Async](sessionR: Resource[F, Session
     using Logger[F])
     extends ContractsRepository[F]:
   private val contractEncoder: skunk.Encoder[Contract] =
-    (varchar ~ int4 ~ int4 ~ text ~ text ~ bool).contramap {
-      case Contract(subject, version, id, schema, schemaType, isMerged, _) =>
-        subject ~ version ~ id ~ schema ~ schemaType.toString ~ isMerged
+    (varchar ~ int4 ~ int4 ~ text ~ text).contramap {
+      case Contract(subject, version, id, schema, schemaType, _) =>
+        subject ~ version ~ id ~ schema ~ schemaType.toString
     }
 
   private val contractDecoder: skunk.Decoder[Contract] =
     (varchar ~ int4 ~ int4 ~ text ~ text ~ bool).map {
-      case subject ~ version ~ id ~ schema ~ schemaType ~ isMerged =>
-        Contract(subject, version, id, schema, SchemaType.fromString(schemaType), isMerged)
+      case subject ~ version ~ id ~ schema ~ schemaType =>
+        Contract(subject, version, id, schema, SchemaType.fromString(schemaType))
     }
 
   private val versionDecoder: skunk.Decoder[Int] = int4
@@ -44,17 +44,14 @@ class ContractsRepositoryPostgresImpl[F[_]: Async](sessionR: Resource[F, Session
   private val subjectDecoder: skunk.Decoder[String] = varchar
 
   private val insertCommand: Command[Contract] =
-    sql"INSERT INTO contracts (subject, version, id, schema, schemaType, isMerged) VALUES ($contractEncoder)".command
-
-  private val updateIsMergedCommand: Command[(String, Int)] =
-    sql"UPDATE contracts SET isMerged = true WHERE subject = $varchar AND version = $int4".command
-
+    sql"INSERT INTO contracts (subject, version, id, schema, schemaType) VALUES ($contractEncoder)".command
+  
   private val selectBySubjectAndVersionQuery: Query[(String, Int), Contract] =
-    sql"SELECT subject, version, id, schema, schemaType, isMerged FROM contracts WHERE subject = $varchar AND version = $int4"
+    sql"SELECT subject, version, id, schema, schemaType FROM contracts WHERE subject = $varchar AND version = $int4"
       .query(contractDecoder)
 
   private val selectAllQuery: Query[Void, Contract] =
-    sql"SELECT subject, version, id, schema, schemaType, isMerged FROM contracts".query(
+    sql"SELECT subject, version, id, schema, schemaType FROM contracts".query(
       contractDecoder)
 
   private val selectAllSubjectsQuery: Query[Void, String] =
@@ -64,7 +61,7 @@ class ContractsRepositoryPostgresImpl[F[_]: Async](sessionR: Resource[F, Session
     sql"SELECT version FROM contracts WHERE subject = $varchar".query(versionDecoder)
 
   private val selectLatestContractQuery: Query[String, Contract] =
-    sql"SELECT subject, version, id, schema, schemaType, isMerged FROM contracts WHERE subject = $varchar ORDER BY version DESC LIMIT 1"
+    sql"SELECT subject, version, id, schema, schemaType FROM contracts WHERE subject = $varchar ORDER BY version DESC LIMIT 1"
       .query(contractDecoder)
 
   private val deleteSubjectAndVersionCommand: Command[(String, Int)] =
@@ -85,11 +82,6 @@ class ContractsRepositoryPostgresImpl[F[_]: Async](sessionR: Resource[F, Session
               .as(skunk.data.Completion.Insert(0))
         }
         .void
-    }
-
-  override def updateIsMerged(subject: String, version: Int): F[Unit] =
-    sessionR.use { session =>
-      session.prepare(updateIsMergedCommand).flatMap(_.execute((subject, version))).void
     }
 
   override def get(subject: String, version: Int): F[Option[Contract]] =

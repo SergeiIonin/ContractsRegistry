@@ -10,8 +10,6 @@ import org.typelevel.log4cats.Logger
 // fixme move test functionality to GitHubServiceSpec and rm it
 trait ContractsHandler[F[_]]:
   def addContract(contract: Contract): F[Unit]
-  // set isMerged for contract to true
-  def updateIsMergedStatus(subject: String, version: Int): F[Unit]
   def deleteContractVersion(subject: String, version: Int): F[Unit]
   def deleteContract(subject: String): F[Unit]
 

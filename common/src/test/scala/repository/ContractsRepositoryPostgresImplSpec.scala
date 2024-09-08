@@ -83,9 +83,7 @@ class ContractsRepositoryPostgresImplSpec
                 resOpt2 <- repository.get(testSubject, 2)
                 _ = resOpt2 shouldBe None
                 _ <- repository.save(testContractV2)
-                _ <- repository.updateIsMerged(testContractV2.subject, testContractV2.version)
                 resOpt2 <- repository.get(testSubject, 2)
-                _ = resOpt2.exists(_.isMerged) shouldBe true
                 subjectsS <- repository.getAllSubjects()
                 subjects  <- subjectsS.compile.toList
                 _ = subjects shouldBe List(testSubject)

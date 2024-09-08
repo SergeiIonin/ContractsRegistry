@@ -10,7 +10,6 @@ import org.typelevel.log4cats.Logger
 
 trait ContractsRepository[F[_]]:
   def save(contract: Contract): F[Unit]
-  def updateIsMerged(subject: String, version: Int): F[Unit]
   def get(subject: String, version: Int): F[Option[Contract]]
   def getAll(): F[fs2.Stream[F, Contract]]
   def getAllVersionsForSubject(subject: String): F[fs2.Stream[F, Int]]

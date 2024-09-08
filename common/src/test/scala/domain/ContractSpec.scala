@@ -10,9 +10,9 @@ import circe.codecs.domain.ContractCodec.given
 class ContractSpec extends AnyWordSpec with Matchers:
   "Contract" should {
     "be encoded" in {
-      val contract = Contract("testSubject", 1, 123, "schema", SchemaType.PROTOBUF, false, None)
+      val contract = Contract("testSubject", 1, 123, "schema", SchemaType.PROTOBUF, None)
       contract.asJson.noSpaces shouldEqual
-        """{"subject":"testSubject","version":1,"id":123,"schema":"schema","schemaType":"PROTOBUF","isMerged":false,"deleted":null}"""
+        """{"subject":"testSubject","version":1,"id":123,"schema":"schema","schemaType":"PROTOBUF","deleted":null}"""
     }
     "be decoded" in {
       val raw =
