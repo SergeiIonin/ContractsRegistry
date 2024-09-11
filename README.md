@@ -7,9 +7,9 @@ This project provides lifecycle management for `Protobuf`-based contracts in a s
 One of the main usages is management of onboarding and deletion of contracts used between microservices within an organization.
 
 Handling of such contracts used across the platform may consist of the following stages:
-1) Validate the contracts syntactically and semantically
-2) Versioning of the contracts (which interleaves with semantical validation)
-3) Submit contracts through the pull request to a contracts repository (where `.proto` files are hosted and probalby compiled) for human control
+1) Validate the contracts syntactically and semantically.
+2) Versioning of the contracts (which interleaves with semantical validation).
+3) Submit contracts through the pull request to the probably standalone contracts repository (where `.proto` files are hosted and probalby compiled) for human control.
 
 The most intuitive approach of leveraging just a standalone contracts repository has a few drawbacks:
 
